@@ -40,8 +40,8 @@ export default function LoginModal({ isOpen, onClose }) {
     e.preventDefault()
     setError('')
     
-    if (!code || code.length !== 6) {
-      setError('Введите 6-значный код')
+    if (!code || code.length < 6) {
+      setError('Введите код подтверждения (минимум 6 цифр)')
       return
     }
 

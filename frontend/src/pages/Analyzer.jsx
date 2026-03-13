@@ -7,6 +7,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import { useAuthStore } from '../store/authStore'
 
 const riskConfig = {
   high: { 
@@ -53,7 +54,8 @@ export default function Analyzer() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [currentContractId, setCurrentContractId] = useState(null)
   const pollingRef = useRef(null)
-
+  
+  const { isAuthenticated } = useAuthStore()
   const queryClient = useQueryClient()
 
   // Cleanup polling on unmount
@@ -121,6 +123,11 @@ export default function Analyzer() {
       toast.error('Пожалуйста, загрузите файл')
       return
     }
+    
+    if (!isAuthenticated) {
+      toast.error('Требуется авторизация. Нажмите "Демо вход" в меню.')
+      return
+    }
 
     setIsAnalyzing(true)
     
@@ -148,7 +155,11 @@ export default function Analyzer() {
       
     } catch (error) {
       console.error('Upload error:', error)
-      toast.error(error.response?.data?.message || 'Ошибка загрузки файла')
+      if (error.response?.status === 401) {
+        toast.error('Требуется авторизация. Пожалуйста, войдите в систему.')
+      } else {
+        toast.error(error.response?.data?.message || 'Ошибка загрузки файла')
+      }
       setIsAnalyzing(false)
     }
   }

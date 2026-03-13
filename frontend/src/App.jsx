@@ -10,11 +10,11 @@ import Risks from './pages/Risks'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 
 function App() {
-  const { initAuth } = useAuthStore()
-
-  useEffect(() => {
-    initAuth()
-  }, [])
+    const { initAuth } = useAuthStore()
+  
+    useEffect(() => {
+      initAuth()
+    }, [])
 
   return (
     <Routes>

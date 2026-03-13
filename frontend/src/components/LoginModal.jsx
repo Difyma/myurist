@@ -10,7 +10,7 @@ export default function LoginModal({ isOpen, onClose }) {
   const [code, setCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const { requestOTP, verifyOTP } = useAuthStore()
+  const { sendOTP, verifyOTP } = useAuthStore()
   const navigate = useNavigate()
 
   if (!isOpen) return null
@@ -25,7 +25,7 @@ export default function LoginModal({ isOpen, onClose }) {
     }
 
     setIsLoading(true)
-    const result = await requestOTP(email)
+    const result = await sendOTP(email)
     setIsLoading(false)
 
     if (result.success) {
@@ -233,7 +233,7 @@ export default function LoginModal({ isOpen, onClose }) {
             <p className="text-xs text-slate-500 text-center">
               {step === 'email' 
                 ? 'Демо-режим позволяет протестировать функционал без регистрации.'
-                : 'Код действителен в течение 10 минут. Максимум 3 попытки ввода.'
+                : 'Код действителен в течение 1 часа. Проверьте папку Спам.'
               }
             </p>
           </div>

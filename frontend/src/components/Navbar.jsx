@@ -61,9 +61,9 @@ export default function Navbar() {
             <div className="hidden md:flex items-center space-x-4">
               {isAuthenticated ? (
                 <div className="flex items-center space-x-3">
-                  <span className="text-sm text-slate-600">{user?.firstName}</span>
+                  <span className="text-sm text-slate-600">{user?.email?.split('@')[0]}</span>
                   <div className="w-8 h-8 bg-gradient-to-br from-primary-700 to-primary-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
-                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+                    {user?.email?.[0]?.toUpperCase()}
                   </div>
                   <button
                     onClick={logout}

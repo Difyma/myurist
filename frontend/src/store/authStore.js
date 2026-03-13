@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import api from '../services/api'
+import { supabase } from '../services/supabase'
 
 export const useAuthStore = create(
   persist(
@@ -11,123 +11,100 @@ export const useAuthStore = create(
       isLoading: false,
       error: null,
 
-      login: async (email, password) => {
-        set({ isLoading: true, error: null })
-        try {
-          const { data } = await api.post('/auth/login', { email, password })
+      // Initialize auth state from Supabase session
+      initAuth: async () => {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
           set({
-            user: data.user,
-            token: data.token,
+            user: session.user,
+            token: session.access_token,
             isAuthenticated: true,
-            isLoading: false,
           })
-          api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
-          return true
-        } catch (error) {
-          set({
-            error: error.response?.data?.message || 'Login failed',
-            isLoading: false,
-          })
-          return false
         }
+
+        // Listen for auth changes
+        supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_IN' && session) {
+            set({
+              user: session.user,
+              token: session.access_token,
+              isAuthenticated: true,
+            })
+          } else if (event === 'SIGNED_OUT') {
+            set({
+              user: null,
+              token: null,
+              isAuthenticated: false,
+            })
+          }
+        })
       },
 
-      register: async (userData) => {
+      // Send OTP to email
+      sendOTP: async (email) => {
         set({ isLoading: true, error: null })
         try {
-          const { data } = await api.post('/auth/register', userData)
-          set({
-            user: data.user,
-            token: data.token,
-            isAuthenticated: true,
-            isLoading: false,
+          const { error } = await supabase.auth.signInWithOtp({
+            email,
+            options: {
+              shouldCreateUser: true,
+            },
           })
-          api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
-          return true
-        } catch (error) {
-          set({
-            error: error.response?.data?.message || 'Registration failed',
-            isLoading: false,
-          })
-          return false
-        }
-      },
 
-      demoLogin: async (email) => {
-        set({ isLoading: true, error: null })
-        try {
-          const { data } = await api.post('/auth/demo', { email })
-          set({
-            user: data.user,
-            token: data.token,
-            isAuthenticated: true,
-            isLoading: false,
-          })
-          api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
-          return true
-        } catch (error) {
-          set({
-            error: error.response?.data?.message || 'Demo login failed',
-            isLoading: false,
-          })
-          return false
-        }
-      },
+          if (error) throw error
 
-      requestOTP: async (email) => {
-        set({ isLoading: true, error: null })
-        try {
-          const { data } = await api.post('/auth/otp/request', { email })
           set({ isLoading: false })
-          return { success: true, message: data.message }
+          return { success: true, message: 'Код отправлен на ваш email' }
         } catch (error) {
           set({
-            error: error.response?.data?.message || 'Failed to send OTP',
+            error: error.message || 'Ошибка отправки кода',
             isLoading: false,
           })
-          return { success: false, error: error.response?.data?.message }
+          return { success: false, error: error.message }
         }
       },
 
-      verifyOTP: async (email, code) => {
+      // Verify OTP
+      verifyOTP: async (email, token) => {
         set({ isLoading: true, error: null })
         try {
-          const { data } = await api.post('/auth/otp/verify', { email, code })
+          const { data, error } = await supabase.auth.verifyOtp({
+            email,
+            token,
+            type: 'email',
+          })
+
+          if (error) throw error
+
           set({
             user: data.user,
-            token: data.token,
+            token: data.session.access_token,
             isAuthenticated: true,
             isLoading: false,
           })
-          api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
+
           return { success: true }
         } catch (error) {
           set({
-            error: error.response?.data?.message || 'Invalid verification code',
+            error: error.message || 'Неверный код подтверждения',
             isLoading: false,
           })
-          return { success: false, error: error.response?.data?.message }
+          return { success: false, error: error.message }
         }
       },
 
-      logout: () => {
+      // Logout
+      logout: async () => {
+        await supabase.auth.signOut()
         set({
           user: null,
           token: null,
           isAuthenticated: false,
           error: null,
         })
-        delete api.defaults.headers.common['Authorization']
       },
 
       clearError: () => set({ error: null }),
-
-      initAuth: () => {
-        const token = get().token
-        if (token) {
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-        }
-      },
     }),
     {
       name: 'legalflow-auth',

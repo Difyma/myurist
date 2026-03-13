@@ -2,11 +2,13 @@
 node_modules/
 */node_modules/
 
-# Environment files
+# Environment files - NEVER commit real secrets
 .env
 .env.local
 .env.*.local
 */.env
+backend/.env
+frontend/.env
 
 # Build outputs
 dist/

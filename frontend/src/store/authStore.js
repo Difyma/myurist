@@ -53,10 +53,10 @@ export const useAuthStore = create(
         }
       },
 
-      demoLogin: async () => {
+      demoLogin: async (email) => {
         set({ isLoading: true, error: null })
         try {
-          const { data } = await api.post('/auth/demo')
+          const { data } = await api.post('/auth/demo', { email })
           set({
             user: data.user,
             token: data.token,

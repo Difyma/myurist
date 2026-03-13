@@ -114,15 +114,26 @@ export const updateProfile = asyncHandler(async (req, res) => {
 });
 
 export const demoLogin = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  
+  // Use provided email or default demo email
+  const userEmail = email || 'demo@legalflow.ru';
+  
   // Find or create demo user
-  let user = await User.findOne({ email: 'demo@legalflow.ru' });
+  let user = await User.findOne({ email: userEmail });
   
   if (!user) {
+    // Extract name from email (e.g., john.doe@example.com -> John Doe)
+    const emailPrefix = userEmail.split('@')[0];
+    const nameParts = emailPrefix.split(/[._-]/).filter(Boolean);
+    const firstName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : 'Демо';
+    const lastName = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1) : 'Пользователь';
+    
     user = await User.create({
-      email: 'demo@legalflow.ru',
+      email: userEmail,
       password: 'demo123456',
-      firstName: 'Демо',
-      lastName: 'Пользователь',
+      firstName,
+      lastName,
       subscription: {
         type: 'professional',
         analysisCount: 0,

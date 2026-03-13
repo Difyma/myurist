@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   Shield, FileSignature, MessagesSquare, Calculator, 
@@ -5,6 +6,7 @@ import {
   PlayCircle, Scale
 } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
+import LoginModal from '../components/LoginModal'
 
 const features = [
   {
@@ -86,11 +88,10 @@ const pricing = [
 
 export default function Home() {
   const navigate = useNavigate()
-  const { demoLogin } = useAuthStore()
+  const [loginModalOpen, setLoginModalOpen] = useState(false)
 
-  const handleDemo = async () => {
-    await demoLogin()
-    navigate('/analyzer')
+  const handleDemo = () => {
+    setLoginModalOpen(true)
   }
 
   return (
@@ -410,6 +411,12 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={loginModalOpen} 
+        onClose={() => setLoginModalOpen(false)} 
+      />
     </div>
   )
 }

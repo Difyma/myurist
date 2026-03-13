@@ -125,17 +125,20 @@ docker-compose up mongo
 
 ### Backend (.env)
 ```env
-PORT=5000
+PORT=5001
 MONGODB_URI=mongodb://localhost:27017/legalflow
-JWT_SECRET=your-super-secret-key
+JWT_SECRET=your-super-secret-key-change-this
 JWT_EXPIRE=7d
 NODE_ENV=development
 UPLOAD_MAX_SIZE=10485760
+
+# AI Analysis (Kimi API - https://platform.moonshot.cn/)
+KIMI_API_KEY=your-kimi-api-key-here
 ```
 
 ### Frontend (.env)
 ```env
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5001/api
 ```
 
 ## 📝 API Endpoints

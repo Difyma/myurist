@@ -164,15 +164,15 @@ async function analyzeContractAsync(contractId) {
       await contract.save();
 
       // Step 2: Analyze with AI if API key is available
-      if (process.env.OPENAI_API_KEY) {
-        console.log('Analyzing with OpenAI...');
+      if (process.env.KIMI_API_KEY) {
+        console.log('Analyzing with Kimi AI...');
         analysis = await analyzeContractWithAI(
           extractedText,
           contract.contractType,
           contract.userRole
         );
       } else {
-        console.log('No OpenAI API key, using mock analysis');
+        console.log('No Kimi API key, using mock analysis');
         analysis = getMockAnalysis(contract.contractType, contract.userRole);
       }
     } catch (error) {

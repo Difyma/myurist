@@ -3,27 +3,29 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+// Kimi API (Moonshot AI) - compatible with OpenAI SDK
+const kimi = new OpenAI({
+  apiKey: process.env.KIMI_API_KEY,
+  baseURL: 'https://api.moonshot.cn/v1',
 });
 
 /**
- * Analyze contract text using OpenAI
+ * Analyze contract text using Kimi AI
  * @param {string} contractText - Extracted contract text
  * @param {string} contractType - Type of contract (podryad, services, supply, etc.)
  * @param {string} userRole - User's role (executor, customer)
  * @returns {Promise<Object>} Analysis results
  */
 export async function analyzeContractWithAI(contractText, contractType, userRole) {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not configured');
+  if (!process.env.KIMI_API_KEY) {
+    throw new Error('KIMI_API_KEY is not configured');
   }
 
   const prompt = buildAnalysisPrompt(contractText, contractType, userRole);
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini', // Use gpt-4o-mini for cost-effectiveness
+    const response = await kimi.chat.completions.create({
+      model: 'moonshot-v1-128k', // Kimi model with 128k context
       messages: [
         {
           role: 'system',
@@ -52,7 +54,7 @@ export async function analyzeContractWithAI(contractText, contractType, userRole
     return normalizeAnalysis(analysis);
     
   } catch (error) {
-    console.error('OpenAI analysis error:', error);
+    console.error('Kimi API analysis error:', error);
     throw new Error(`AI analysis failed: ${error.message}`);
   }
 }
@@ -81,7 +83,7 @@ function buildAnalysisPrompt(contractText, contractType, userRole) {
 
 ТЕКСТ ДОГОВОРА:
 ---
-${contractText.slice(0, 15000)}
+${contractText.slice(0, 50000)}
 ---
 
 ЗАДАЧА:
@@ -180,7 +182,7 @@ function calculateRiskScore(risks) {
 }
 
 /**
- * Fallback mock analysis for testing without OpenAI
+ * Fallback mock analysis for testing without Kimi API
  */
 export function getMockAnalysis(contractType, userRole) {
   const risks = [

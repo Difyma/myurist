@@ -4,6 +4,7 @@ import { asyncHandler } from '../middleware/error.js';
 import { generateContractDocument } from '../services/contractGenerator.js';
 import { extractText } from '../services/documentParser.js';
 import { analyzeContractWithAI, getMockAnalysis } from '../services/aiAnalysis.js';
+import { generateAnalysisReport } from '../services/reportGenerator.js';
 import path from 'path';
 
 // Upload and analyze contract
@@ -164,15 +165,15 @@ async function analyzeContractAsync(contractId) {
       await contract.save();
 
       // Step 2: Analyze with AI if API key is available
-      if (process.env.KIMI_API_KEY) {
-        console.log('Analyzing with Kimi AI...');
+      if (process.env.OPENAI_API_KEY) {
+        console.log('Analyzing with OpenAI...');
         analysis = await analyzeContractWithAI(
           extractedText,
           contract.contractType,
           contract.userRole
         );
       } else {
-        console.log('No Kimi API key, using mock analysis');
+        console.log('No OpenAI API key, using mock analysis');
         analysis = getMockAnalysis(contract.contractType, contract.userRole);
       }
     } catch (error) {
@@ -230,4 +231,41 @@ export const getAnalysisStatus = asyncHandler(async (req, res) => {
     analysis: contract.analysis,
     analyzedAt: contract.analyzedAt
   });
+});
+
+// Download analysis report as DOCX
+export const downloadAnalysisReport = asyncHandler(async (req, res) => {
+  const contract = await Contract.findOne({
+    _id: req.params.id,
+    user: req.user.id
+  });
+
+  if (!contract) {
+    return res.status(404).json({
+      success: false,
+      message: 'Contract not found'
+    });
+  }
+
+  if (contract.status !== 'completed' || !contract.analysis) {
+    return res.status(400).json({
+      success: false,
+      message: 'Analysis not completed yet'
+    });
+  }
+
+  // Generate DOCX report
+  const buffer = await generateAnalysisReport(contract);
+
+  // Set filename based on original contract name
+  const originalName = contract.originalName || 'contract';
+  const baseName = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
+  const reportName = `${baseName}_analysis.docx`;
+
+  // Set headers for file download
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  res.setHeader('Content-Disposition', `attachment; filename="${reportName}"`);
+  res.setHeader('Content-Length', buffer.length);
+
+  res.send(buffer);
 });

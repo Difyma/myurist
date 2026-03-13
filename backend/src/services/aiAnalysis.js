@@ -1,35 +1,39 @@
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
+import { extractClauses, enhanceRisksWithClauses } from './clauseExtractor.js';
 
 dotenv.config();
 
-// Kimi API (Moonshot AI) - compatible with OpenAI SDK
-const kimi = new OpenAI({
-  apiKey: process.env.KIMI_API_KEY,
-  baseURL: 'https://api.moonshot.cn/v1',
+// OpenAI API
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 /**
- * Analyze contract text using Kimi AI
+ * Analyze contract text using OpenAI
  * @param {string} contractText - Extracted contract text
  * @param {string} contractType - Type of contract (podryad, services, supply, etc.)
  * @param {string} userRole - User's role (executor, customer)
  * @returns {Promise<Object>} Analysis results
  */
 export async function analyzeContractWithAI(contractText, contractType, userRole) {
-  if (!process.env.KIMI_API_KEY) {
-    throw new Error('KIMI_API_KEY is not configured');
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not configured');
   }
 
-  const prompt = buildAnalysisPrompt(contractText, contractType, userRole);
+  // Extract clauses from the contract for reference
+  const clauses = extractClauses(contractText);
+  console.log(`Extracted ${clauses.length} clauses from contract`);
+
+  const prompt = buildAnalysisPrompt(contractText, contractType, userRole, clauses);
 
   try {
-    const response = await kimi.chat.completions.create({
-      model: 'moonshot-v1-128k', // Kimi model with 128k context
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini', // OpenAI model
       messages: [
         {
           role: 'system',
-          content: `Вы - эксперт по юридическому анализу договоров. Ваша задача - проанализировать договор и выявить риски, которые могут быть невыгодны для указанной стороны. Отвечайте ТОЛЬКО в формате JSON без Markdown форматирования.`
+          content: `Вы - эксперт по юридическому анализу договоров. Ваша задача - проанализировать договор и выявить риски, которые могут быть невыгодны для указанной стороны. Отвечайте ТОЛЬКО в формате JSON без Markdown форматирования. Для каждого риска указывайте конкретный номер пункта/статьи договора.`
         },
         {
           role: 'user',
@@ -50,16 +54,21 @@ export async function analyzeContractWithAI(contractText, contractType, userRole
     const jsonStr = jsonMatch[1] || content;
     const analysis = JSON.parse(jsonStr.trim());
     
+    // Enhance risks with clause references
+    if (analysis.risks && clauses.length > 0) {
+      analysis.risks = enhanceRisksWithClauses(analysis.risks, clauses);
+    }
+    
     // Validate and normalize response
     return normalizeAnalysis(analysis);
     
   } catch (error) {
-    console.error('Kimi API analysis error:', error);
+    console.error('OpenAI analysis error:', error);
     throw new Error(`AI analysis failed: ${error.message}`);
   }
 }
 
-function buildAnalysisPrompt(contractText, contractType, userRole) {
+function buildAnalysisPrompt(contractText, contractType, userRole, clauses) {
   const typeLabels = {
     podryad: 'договор подряда',
     services: 'договор оказания услуг',
@@ -78,22 +87,33 @@ function buildAnalysisPrompt(contractText, contractType, userRole) {
   const typeLabel = typeLabels[contractType] || typeLabels.other;
   const roleLabel = roleLabels[userRole] || roleLabels.executor;
 
+  // Build clause reference section
+  let clauseSection = '';
+  if (clauses && clauses.length > 0) {
+    clauseSection = `
+СТРУКТУРА ДОГОВОРА (номера пунктов/статей):
+${clauses.slice(0, 50).map(c => `- Пункт ${c.number}: ${c.text.slice(0, 80)}...`).join('\n')}
+`;
+  }
+
   return `
 Проанализируй следующий ${typeLabel} с позиции ${roleLabel}.
 
 ТЕКСТ ДОГОВОРА:
 ---
-${contractText.slice(0, 50000)}
+${contractText.slice(0, 40000)}
 ---
+${clauseSection}
 
 ЗАДАЧА:
 Выяви риски и проблемные пункты, которые могут быть невыгодны для ${roleLabel}. Для каждого риска укажи:
 1. Уровень риска: high (высокий - критичные проблемы), medium (средний - требуют внимания), low (низкий - замечания)
 2. Заголовок - краткое название проблемы
-3. Текст - цитата из договора (точная формулировка)
-4. Статья ГК РФ или другой закон
-5. Описание - почему это проблема для ${roleLabel}
-6. Рекомендация - как исправить
+3. clause - номер пункта/статьи договора (например: "4.2", "Статья 5", "п. 3.1") - найди по цитате
+4. Текст - цитата из договора (точная формулировка)
+5. Статья ГК РФ или другой закон
+6. Описание - почему это проблема для ${roleLabel}
+7. Рекомендация - как исправить
 
 Обрати особое внимание на:
 - Одностороннее изменение условий
@@ -109,6 +129,7 @@ ${contractText.slice(0, 50000)}
     {
       "level": "high|medium|low",
       "title": "Название риска",
+      "clause": "Номер пункта/статьи (например: 4.2)",
       "text": "Цитата из договора",
       "article": "Ст. XXX ГК РФ",
       "description": "Почему это проблема",
@@ -182,13 +203,14 @@ function calculateRiskScore(risks) {
 }
 
 /**
- * Fallback mock analysis for testing without Kimi API
+ * Fallback mock analysis for testing without OpenAI API
  */
 export function getMockAnalysis(contractType, userRole) {
   const risks = [
     {
       level: 'high',
       title: 'Одностороннее изменение объема работ',
+      clause: '4.2',
       text: '«Заказчик вправе в одностороннем порядке изменить объем работ»',
       article: 'Ст. 310 ГК РФ',
       description: `Изменение договора возможно только по соглашению сторон. Данная формулировка дает заказчику неограниченное право менять ТЗ.`,
@@ -197,6 +219,7 @@ export function getMockAnalysis(contractType, userRole) {
     {
       level: 'high',
       title: 'Неограниченная ответственность исполнителя',
+      clause: '8.1',
       text: '«Исполнитель несет ответственность за все убытки Заказчика»',
       article: 'Ст. 15, 393 ГК РФ',
       description: 'Отсутствие ограничения ответственности может привести к требованиям о возмещении недополученной прибыли, косвенных убытков.',
@@ -205,6 +228,7 @@ export function getMockAnalysis(contractType, userRole) {
     {
       level: 'medium',
       title: 'Несоразмерная неустойка',
+      clause: '6.1',
       text: '«Неустойка 1% за каждый день просрочки»',
       article: 'Ст. 333 ГК РФ',
       description: '365% годовых значительно превышает ключевую ставку ЦБ. Суд снизит неустойку, но процесс займет время.',

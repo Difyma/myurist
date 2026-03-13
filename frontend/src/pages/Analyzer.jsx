@@ -164,6 +164,7 @@ export default function Analyzer() {
         {
           level: 'high',
           title: 'Одностороннее изменение объема работ',
+          clause: '4.2',
           text: '«Заказчик вправе в одностороннем порядке изменить объем работ»',
           article: 'Ст. 310 ГК РФ',
           description: 'Изменение договора возможно только по соглашению сторон. Данная формулировка дает заказчику неограниченное право менять ТЗ.',
@@ -172,6 +173,7 @@ export default function Analyzer() {
         {
           level: 'high',
           title: 'Неограниченная ответственность исполнителя',
+          clause: '8.1',
           text: '«Исполнитель несет ответственность за все убытки Заказчика»',
           article: 'Ст. 15, 393 ГК РФ',
           description: 'Отсутствие ограничения ответственности может привести к требованиям о возмещении недополученной прибыли, косвенных убытков.',
@@ -180,6 +182,7 @@ export default function Analyzer() {
         {
           level: 'medium',
           title: 'Несоразмерная неустойка',
+          clause: '6.1',
           text: '«Неустойка 1% за каждый день просрочки»',
           article: 'Ст. 333 ГК РФ',
           description: '365% годовых значительно превышает ключевую ставку ЦБ. Суд снизит неустойку, но процесс займет время.',
@@ -188,6 +191,7 @@ export default function Analyzer() {
         {
           level: 'medium',
           title: 'Передача ИС без поэтапной оплаты',
+          clause: '7.3',
           text: '«Исключительные права передаются после полной оплаты»',
           article: 'Ст. 1234 ГК РФ',
           description: 'Риск неполучения оплаты после передачи прав. При банкротстве заказчика права попадут в конкурсную массу.',
@@ -196,6 +200,7 @@ export default function Analyzer() {
         {
           level: 'low',
           title: 'Отсутствие срока рассмотрения результата',
+          clause: '5.2',
           text: '«Заказчик обязуется рассмотреть результат работ»',
           article: 'Ст. 720 ГК РФ',
           description: 'Без конкретного срока заказчик может затягивать приемку работ бесконечно.',
@@ -218,30 +223,47 @@ export default function Analyzer() {
     toast.success('Демо-данные загружены')
   }
 
-  const downloadReport = () => {
-    if (!analysis) return
-    
-    const report = {
-      title: 'Анализ договора',
-      date: new Date().toLocaleDateString('ru-RU'),
-      contractType: contractTypes.find(t => t.value === contractType)?.label,
-      userRole: userRole === 'executor' ? 'Исполнитель' : 'Заказчик',
-      summary: analysis.summary,
-      risks: analysis.risks,
-      recommendations: analysis.recommendations
+  const downloadReport = async () => {
+    if (!analysis || !currentContractId) {
+      toast.error('Анализ не завершен или ID контракта неизвестен')
+      return
     }
     
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `contract-analysis-${Date.now()}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    
-    toast.success('Отчет сохранен')
+    try {
+      toast.loading('Формирование отчета...', { id: 'download' })
+      
+      const response = await api.get(`/contracts/${currentContractId}/report`, {
+        responseType: 'blob'
+      })
+      
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers['content-disposition']
+      let filename = 'analysis_report.docx'
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+        if (filenameMatch) {
+          filename = filenameMatch[1]
+        }
+      }
+      
+      // Create blob and download
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      toast.success('Отчет сохранен', { id: 'download' })
+    } catch (error) {
+      console.error('Download error:', error)
+      toast.error('Ошибка при скачивании отчета', { id: 'download' })
+    }
   }
 
   return (
@@ -462,6 +484,11 @@ export default function Analyzer() {
                             <h4 className="font-bold text-slate-900">{risk.title}</h4>
                           </div>
                           <div className="flex items-center gap-2">
+                            {risk.clause && (
+                              <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded border border-slate-200">
+                                Пункт {risk.clause}
+                              </span>
+                            )}
                             {risk.article && (
                               <span className="text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded">
                                 {risk.article}
@@ -482,6 +509,15 @@ export default function Analyzer() {
 
                       {isExpanded && (
                         <div className="px-5 pb-5">
+                          {risk.clause && (
+                            <div className="mb-3">
+                              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Пункт договора:</span>
+                              <span className="ml-2 text-sm font-medium text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
+                                {risk.clause}
+                              </span>
+                            </div>
+                          )}
+                          
                           {risk.text && (
                             <div className="bg-slate-50 p-3 rounded border-l-4 border-slate-400 mb-3">
                               <p className="text-sm text-slate-700 italic">"{risk.text}"</p>

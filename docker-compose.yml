@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongo:
+    image: mongo:7
+    container_name: legalflow-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: legalflow
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - legalflow-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: legalflow-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://admin:password123@mongo:27017/legalflow?authSource=admin
+      JWT_SECRET: your-production-secret-key-change-this
+      JWT_EXPIRE: 7d
+      UPLOAD_MAX_SIZE: 10485760
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      - mongo
+    networks:
+      - legalflow-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: legalflow-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - legalflow-network
+
+volumes:
+  mongo_data:
+  uploads:
+
+networks:
+  legalflow-network:
+    driver: bridge

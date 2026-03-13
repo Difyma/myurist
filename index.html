@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalFlow 2.0 — Цифровой юрист для бизнеса</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#f59e0b',
+                        danger: '#dc2626',
+                        warning: '#f59e0b',
+                        success: '#16a34a',
+                        surface: '#f8fafc',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-text {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .risk-high { border-left: 4px solid #dc2626; background: #fef2f2; }
+        .risk-medium { border-left: 4px solid #f59e0b; background: #fffbeb; }
+        .risk-low { border-left: 4px solid #16a34a; background: #f0fdf4; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .doc-preview {
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+            color: #334155;
+        }
+        .chat-bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        .chat-left { background: #f1f5f9; border-bottom-left-radius: 4px; }
+        .chat-right { background: #dbeafe; border-bottom-right-radius: 4px; margin-left: auto; }
+        .step-content { transition: opacity 0.3s ease; }
+        .step-content.hidden { display: none; opacity: 0; }
+        .contract-type-card { transition: all 0.2s ease; }
+        .contract-type-card:hover { transform: translateY(-2px); }
+        .role-btn { transition: all 0.2s ease; }
+        .role-btn.active { transform: scale(1.02); }
+    </style>
+</head>
+<body class="bg-surface text-slate-800 font-sans antialiased">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full bg-white/90 backdrop-blur-md border-b border-slate-200 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center cursor-pointer" onclick="router.navigate('home')">
+                    <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-balance-scale text-white text-sm"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-slate-900">LegalFlow</span>
+                    <span class="ml-2 text-xs font-medium text-secondary bg-blue-50 px-2 py-1 rounded-full">2.0</span>
+                </div>
+                
+                <div class="hidden md:flex space-x-8">
+                    <button onclick="router.navigate('analyzer')" class="text-slate-600 hover:text-primary font-medium transition">Анализ договоров</button>
+                    <button onclick="router.navigate('constructor')" class="text-slate-600 hover:text-primary font-medium transition">Конструктор</button>
+                    <button onclick="router.navigate('chat')" class="text-slate-600 hover:text-primary font-medium transition">Проверка переписки</button>
+                    <button onclick="router.navigate('risks')" class="text-slate-600 hover:text-primary font-medium transition">Оценка рисков</button>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div id="user-section" class="hidden flex items-center space-x-3">
+                        <span class="text-sm text-slate-600">Демо-пользователь</span>
+                        <div class="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-medium text-sm">
+                            ДФ
+                        </div>
+                    </div>
+                    <button id="login-btn" onclick="app.login()" class="bg-primary hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-medium transition shadow-lg shadow-blue-900/20">
+                        Войти
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="app" class="pt-16 min-h-screen">
+        <!-- Views will be injected here -->
+    </main>
+
+    <!-- Templates -->
+    <template id="home-view">
+        <div class="animate-fade-in">
+            <!-- Hero -->
+            <section class="relative overflow-hidden bg-white pt-20 pb-32">
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-slate-50 opacity-70"></div>
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+                    <div class="grid lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <div class="inline-flex items-center px-4 py-2 rounded-full bg-blue-50 text-primary font-medium text-sm mb-6 border border-blue-100">
+                                <span class="flex h-2 w-2 rounded-full bg-secondary mr-2"></span>
+                                Новое: Анализ переписки из Telegram
+                            </div>
+                            <h1 class="text-5xl lg:text-6xl font-bold leading-tight mb-6 text-slate-900">
+                                Юридическая защита 
+                                <span class="gradient-text">за 3 минуты</span>
+                            </h1>
+                            <p class="text-xl text-slate-600 mb-8 leading-relaxed">
+                                Проверьте договор до подписания. Найдите риски, которые могут стоить вам 500 000 ₽ в суде.
+                                AI-анализ + нормы права РФ.
+                            </p>
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <button onclick="router.navigate('analyzer')" class="bg-primary hover:bg-blue-800 text-white px-8 py-4 rounded-xl font-semibold text-lg transition shadow-xl shadow-blue-900/20 flex items-center justify-center">
+                                    <i class="fas fa-shield-alt mr-2"></i>
+                                    Проверить договор
+                                </button>
+                                <button onclick="router.navigate('constructor')" class="bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-200 px-8 py-4 rounded-xl font-semibold text-lg transition flex items-center justify-center">
+                                    <i class="fas fa-file-signature mr-2"></i>
+                                    Составить договор
+                                </button>
+                            </div>
+                            <div class="mt-8 flex items-center space-x-6 text-sm text-slate-500">
+                                <div class="flex items-center">
+                                    <i class="fas fa-check-circle text-success mr-2"></i>
+                                    152-ФЗ compliant
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-check-circle text-success mr-2"></i>
+                                    Данные в РФ
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-check-circle text-success mr-2"></i>
+                                    Шифрование
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-primary rounded-3xl blur-3xl opacity-20 transform rotate-3"></div>
+                            <div class="relative glass-panel rounded-2xl p-8 shadow-2xl border border-slate-200">
+                                <div class="flex items-center justify-between mb-6">
+                                    <h3 class="font-bold text-slate-800">Пример анализа риска</h3>
+                                    <span class="text-xs font-medium px-3 py-1 rounded-full bg-danger/10 text-danger border border-danger/20">Высокий риск</span>
+                                </div>
+                                <div class="space-y-4">
+                                    <div class="bg-red-50 border-l-4 border-danger p-4 rounded-r-lg">
+                                        <p class="text-sm text-slate-700 font-medium mb-1">«Заказчик вправе в одностороннем порядке изменить объем работ»</p>
+                                        <p class="text-xs text-slate-500">Пункт 4.2 договора подряда</p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div class="flex items-start text-sm">
+                                            <i class="fas fa-exclamation-triangle text-danger mt-1 mr-2"></i>
+                                            <span class="text-slate-700">Риск одностороннего изменения обязательства без согласования</span>
+                                        </div>
+                                        <div class="flex items-start text-sm">
+                                            <i class="fas fa-gavel text-secondary mt-1 mr-2"></i>
+                                            <span class="text-slate-600 text-xs">Ст. 310 ГК РФ — изменение договора возможно только по соглашению сторон</span>
+                                        </div>
+                                    </div>
+                                    <div class="pt-4 border-t border-slate-200">
+                                        <p class="text-sm font-medium text-slate-800 mb-2">Рекомендация:</p>
+                                        <p class="text-sm text-slate-600">Добавить: «Изменения возможны только при согласовании стороной дополнительного соглашения с корректировкой стоимости и сроков»</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features Grid -->
+            <section class="py-20 bg-slate-50">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-3xl mx-auto mb-16">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Все инструменты для защиты бизнеса</h2>
+                        <p class="text-lg text-slate-600">От проверки договора до подготовки иска. Полный цикл правовой защиты.</p>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition cursor-pointer" onclick="router.navigate('analyzer')">
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                                <i class="fas fa-search text-primary text-xl"></i>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Анализ договоров</h3>
+                            <p class="text-sm text-slate-600">Загрузите PDF или Word. Система найдет риски, перекосы и опасные формулировки.</p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition cursor-pointer" onclick="router.navigate('constructor')">
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                                <i class="fas fa-file-signature text-success text-xl"></i>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Конструктор</h3>
+                            <p class="text-sm text-slate-600">Ответьте на вопросы. Получите сбалансированный договор с учетом вашей роли.</p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition cursor-pointer" onclick="router.navigate('chat')">
+                            <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mb-4">
+                                <i class="fas fa-comments text-warning text-xl"></i>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Анализ переписки</h3>
+                            <p class="text-sm text-slate-600">Проверьте Telegram и Email. Найдите согласованные условия и изменения ТЗ.</p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition cursor-pointer" onclick="router.navigate('risks')">
+                            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                                <i class="fas fa-calculator text-danger text-xl"></i>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Финансовые риски</h3>
+                            <p class="text-sm text-slate-600">Рассчитайте максимальную ответственность и проверьте неустойку на соразмерность.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- How it works -->
+            <section class="py-20 bg-white">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="grid lg:grid-cols-2 gap-16 items-center">
+                        <div>
+                            <h2 class="text-3xl font-bold text-slate-900 mb-6">Как это работает</h2>
+                            <div class="space-y-8">
+                                <div class="flex">
+                                    <div class="flex-shrink-0 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">1</div>
+                                    <div>
+                                        <h3 class="font-bold text-lg mb-2">Загрузите документ</h3>
+                                        <p class="text-slate-600">PDF, Word или скриншоты переписки. Поддерживаем все популярные форматы.</p>
+                                    </div>
+                                </div>
+                                <div class="flex">
+                                    <div class="flex-shrink-0 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">2</div>
+                                    <div>
+                                        <h3 class="font-bold text-lg mb-2">AI проводит анализ</h3>
+                                        <p class="text-slate-600">Нейросеть проверяет риски по 8 категориям: ответственность, сроки, неустойка, ИП и др.</p>
+                                    </div>
+                                </div>
+                                <div class="flex">
+                                    <div class="flex-shrink-0 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">3</div>
+                                    <div>
+                                        <h3 class="font-bold text-lg mb-2">Получите решение</h3>
+                                        <p class="text-slate-600">Цветовая разметка, ссылки на законы и готовые формулировки для исправления.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 rounded-2xl p-8 text-white">
+                            <h3 class="text-2xl font-bold mb-6">Почему это безопасно</h3>
+                            <ul class="space-y-4">
+                                <li class="flex items-start">
+                                    <i class="fas fa-lock text-green-400 mt-1 mr-3"></i>
+                                    <div>
+                                        <strong class="block mb-1">Шифрование</strong>
+                                        <span class="text-slate-400 text-sm">Все документы шифруются по стандарту AES-256</span>
+                                    </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-server text-green-400 mt-1 mr-3"></i>
+                                    <div>
+                                        <strong class="block mb-1">Серверы в РФ</strong>
+                                        <span class="text-slate-400 text-sm">Данные хранятся в дата-центрах Yandex Cloud (152-ФЗ)</span>
+                                    </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-user-shield text-green-400 mt-1 mr-3"></i>
+                                    <div>
+                                        <strong class="block mb-1">Нет утечек</strong>
+                                        <span class="text-slate-400 text-sm">Автоматическое удаление через 30 дней. Нет доступа третьих лиц.</span>
+                                    </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-balance-scale text-green-400 mt-1 mr-3"></i>
+                                    <div>
+                                        <strong class="block mb-1">Юридическая чистота</strong>
+                                        <span class="text-slate-400 text-sm">Не требуется статус адвоката. Сервис является инструментом автоматизации.</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pricing -->
+            <section class="py-20 bg-slate-50">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-3xl mx-auto mb-16">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Тарифы</h2>
+                        <p class="text-lg text-slate-600">Выберите подходящий план. Всегда можно начать с разового аудита.</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                        <div class="bg-white rounded-2xl p-8 border border-slate-200">
+                            <h3 class="text-xl font-bold mb-2">Разовый аудит</h3>
+                            <div class="text-4xl font-bold text-slate-900 mb-4">3 990 ₽</div>
+                            <p class="text-sm text-slate-600 mb-6">Один договор полный анализ</p>
+                            <ul class="space-y-3 mb-8 text-sm">
+                                <li class="flex items-center"><i class="fas fa-check text-success mr-2"></i> Анализ 1 договора</li>
+                                <li class="flex items-center"><i class="fas fa-check text-success mr-2"></i> Проверка на 8 рисков</li>
+                                <li class="flex items-center"><i class="fas fa-check text-success mr-2"></i> Рекомендации по правкам</li>
+                                <li class="flex items-center text-slate-400"><i class="fas fa-check mr-2"></i> Экспорт в Word</li>
+                            </ul>
+                            <button onclick="router.navigate('analyzer')" class="w-full py-3 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary hover:text-white transition">Выбрать</button>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-8 border-2 border-primary relative shadow-xl">
+                            <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-white px-4 py-1 rounded-full text-sm font-medium">
+                                Для фрилансера
+                            </div>
+                            <h3 class="text-xl font-bold mb-2">Professional</h3>
+                            <div class="text-4xl font-bold text-slate-900 mb-4">2 990 ₽<span class="text-lg text-slate-500 font-normal">/мес</span></div>
+                            <p class="text-sm text-slate-600 mb-6">Постоянная защита ваших сделок</p>
+                            <ul class="space-y-3 mb-8 text-sm">
+                                <li class="flex items-center"><i class="fas fa-check text-success mr-2"></i> Проверка 3 договоров</li>
+                                <li class="flex items-center"><i class="fas fa-check text-success mr-2"></i> Генерация 2 договоров</li>
+                                <li class="flex items-center"><i class="fas fa-check text-success mr-2"></i> Анализ переписки</li>
+                                <li class="flex items-center"><i class="fas fa-check text-success mr-2"></i> Оценка финрисков</li>
+                            </ul>
+                            <button onclick="app.login()" class="w-full py-3 bg-primary text-white rounded-lg font-semibold hover:bg-blue-800 transition">Подключить</button>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-8 border border-slate-200">
+                            <h3 class="text-xl font-bold mb-2">Business</h3>
+                            <div class="text-4xl font-bold text-slate-900 mb-4">9 990 ₽<span class="text-lg text-slate-500 font-normal">/мес</span></div>
+                            <p class="text-sm text-slate-600 mb-6">Для компаний и агентств</p>
+                            <ul class="space-y-3 mb-8 text-sm">
+                                <li class="flex items-center"><i class="fas fa-check text-success mr-2"></i> Неограниченная проверка</li>
+                                <li class="flex items-center"><i class="fas fa-check text-success mr-2"></i> 5 пользователей</li>
+                                <li class="flex items-center"><i class="fas fa-check text-success mr-2"></i> API интеграция</li>
+                                <li class="flex items-center"><i class="fas fa-check text-success mr-2"></i> Приоритетная поддержка</li>
+                            </ul>
+                            <button onclick="app.login()" class="w-full py-3 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary hover:text-white transition">Подключить</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="bg-slate-900 text-slate-300 py-12">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="grid md:grid-cols-4 gap-8">
+                        <div>
+                            <div class="flex items-center mb-4">
+                                <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-balance-scale text-white text-sm"></i>
+                                </div>
+                                <span class="font-bold text-xl text-white">LegalFlow</span>
+                            </div>
+                            <p class="text-sm">Цифровой юрист для бизнеса. Проверка договоров, оценка рисков, защита интересов.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white mb-4">Инструменты</h4>
+                            <ul class="space-y-2 text-sm">
+                                <li><button onclick="router.navigate('analyzer')" class="hover:text-white transition">Анализ договоров</button></li>
+                                <li><button onclick="router.navigate('constructor')" class="hover:text-white transition">Конструктор</button></li>
+                                <li><button onclick="router.navigate('chat')" class="hover:text-white transition">Анализ переписки</button></li>
+                                <li><button onclick="router.navigate('risks')" class="hover:text-white transition">Калькулятор рисков</button></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white mb-4">Компания</h4>
+                            <ul class="space-y-2 text-sm">
+                                <li><a href="#" class="hover:text-white transition">О нас</a></li>
+                                <li><a href="#" class="hover:text-white transition">Блог</a></li>
+                                <li><a href="#" class="hover:text-white transition">Карьера</a></li>
+                                <li><a href="#" class="hover:text-white transition">Контакты</a></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white mb-4">Поддержка</h4>
+                            <ul class="space-y-2 text-sm">
+                                <li><a href="#" class="hover:text-white transition">Помощь</a></li>
+                                <li><a href="#" class="hover:text-white transition">API документация</a></li>
+                                <li><a href="#" class="hover:text-white transition">Политика конфиденциальности</a></li>
+                                <li><a href="#" class="hover:text-white transition">152-ФЗ</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-800 mt-8 pt-8 text-sm text-center">
+                        <p>&copy; 2024 LegalFlow 2.0. Все права защищены.</p>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </template>
+
+    <template id="analyzer-view">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-slate-900 mb-2">Анализ договора</h1>
+                <p class="text-slate-600">Загрузите документ для проверки на риски и перекосы в пользу другой стороны</p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Upload Section -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-lg mb-4">Загрузка документа</h3>
+                        
+                        <div class="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-primary hover:bg-blue-50 transition cursor-pointer" onclick="document.getElementById('file-upload').click()">
+                            <input type="file" id="file-upload" class="hidden" accept=".pdf,.doc,.docx" onchange="analyzer.handleFile(event)">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-slate-400 mb-4"></i>
+                            <p class="text-sm text-slate-600 mb-2">Перетащите файл или нажмите для загрузки</p>
+                            <p class="text-xs text-slate-400">PDF, DOC, DOCX до 10 МБ</p>
+                        </div>
+
+                        <div class="mt-6 space-y-3">
+                            <label class="block text-sm font-medium text-slate-700">Тип договора</label>
+                            <select id="contract-type" class="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                                <option value="podryad">Договор подряда</option>
+                                <option value="services">Оказания услуг</option>
+                                <option value="supply">Поставки</option>
+                                <option value="nda">NDA</option>
+                                <option value="agency">Агентский</option>
+                                <option value="oferta">Оферта</option>
+                            </select>
+                        </div>
+
+                        <div class="mt-6 space-y-3">
+                            <label class="block text-sm font-medium text-slate-700">Ваша роль</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button class="role-btn active border-2 border-primary bg-blue-50 text-primary px-4 py-2 rounded-lg text-sm font-medium" onclick="analyzer.setRole(this, 'executor')">Исполнитель</button>
+                                <button class="role-btn border border-slate-300 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium hover:border-primary hover:text-primary" onclick="analyzer.setRole(this, 'customer')">Заказчик</button>
+                            </div>
+                        </div>
+
+                        <button onclick="analyzer.analyze()" class="w-full mt-6 bg-primary hover:bg-blue-800 text-white py-3 rounded-lg font-semibold transition shadow-lg shadow-blue-900/20">
+                            <i class="fas fa-search mr-2"></i> Начать анализ
+                        </button>
+
+                        <div class="mt-6 pt-6 border-t border-slate-200">
+                            <button onclick="analyzer.loadDemo()" class="text-secondary hover:text-primary text-sm font-medium flex items-center">
+                                <i class="fas fa-play-circle mr-2"></i> Загрузить демо-пример
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div class="lg:col-span-2 space-y-6" id="analysis-results" style="display: none;">
+                    <!-- Summary Card -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-bold text-lg">Результаты анализа</h3>
+                            <div class="flex items-center space-x-2">
+                                <span class="px-3 py-1 rounded-full text-sm font-medium bg-danger/10 text-danger border border-danger/20" id="risk-badge">Высокий риск</span>
+                                <button onclick="analyzer.exportReport()" class="text-slate-500 hover:text-primary p-2 rounded-lg hover:bg-slate-100 transition">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="text-center p-4 bg-red-50 rounded-lg border border-red-100">
+                                <div class="text-2xl font-bold text-danger" id="high-risks-count">3</div>
+                                <div class="text-xs text-slate-600 mt-1">Критических риска</div>
+                            </div>
+                            <div class="text-center p-4 bg-amber-50 rounded-lg border border-amber-100">
+                                <div class="text-2xl font-bold text-warning" id="medium-risks-count">2</div>
+                                <div class="text-xs text-slate-600 mt-1">Средних риска</div>
+                            </div>
+                            <div class="text-center p-4 bg-green-50 rounded-lg border border-green-100">
+                                <div class="text-2xl font-bold text-success" id="low-risks-count">4</div>
+                                <div class="text-xs text-slate-600 mt-1">Замечаний</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risks List -->
+                    <div class="space-y-4" id="risks-container">
+                        <!-- Risks will be inserted here -->
+                    </div>
+
+                    <!-- Document Preview -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-lg mb-4">Разметка документа</h3>
+                        <div class="bg-slate-50 p-6 rounded-lg doc-preview text-sm leading-relaxed" id="document-preview">
+                            <!-- Document content -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div class="lg:col-span-2 flex items-center justify-center text-slate-400 min-h-[400px]" id="empty-state">
+                    <div class="text-center">
+                        <i class="fas fa-file-contract text-6xl mb-4 text-slate-300"></i>
+                        <p class="text-lg">Загрузите договор для начала анализа</p>
+                        <p class="text-sm mt-2">Или нажмите "Загрузить демо-пример" для просмотра</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="constructor-view">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-slate-900 mb-2">Конструктор договоров</h1>
+                <p class="text-slate-600">Ответьте на вопросы — получите сбалансированный договор с защитой ваших интересов</p>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <!-- Progress -->
+                <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-slate-700">Шаг <span id="current-step">1</span> из 6</span>
+                        <span class="text-sm text-slate-500" id="progress-percent">16%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-2">
+                        <div class="bg-primary h-2 rounded-full transition-all duration-300" id="progress-bar" style="width: 16%"></div>
+                    </div>
+                </div>
+
+                <!-- Form Steps -->
+                <div class="p-6">
+                    <!-- Step 1: Type -->
+                    <div class="step-content" data-step="1">
+                        <h3 class="text-xl font-bold mb-6">Выберите тип договора</h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="contract-type-card border-2 border-slate-200 rounded-lg p-4 cursor-pointer hover:border-primary hover:bg-blue-50 transition" onclick="constructor.selectType('dev')">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-code text-primary mr-3 text-xl"></i>
+                                    <span class="font-bold">Разработка сайта/ПО</span>
+                                </div>
+                                <p class="text-sm text-slate-600">Веб-разработка, мобильные приложения, интеграции</p>
+                            </div>
+                            <div class="contract-type-card border-2 border-slate-200 rounded-lg p-4 cursor-pointer hover:border-primary hover:bg-blue-50 transition" onclick="constructor.selectType('marketing')">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-bullhorn text-primary mr-3 text-xl"></i>
+                                    <span class="font-bold">Маркетинговые услуги</span>
+                                </div>
+                                <p class="text-sm text-slate-600">SMM, SEO, контекстная реклама, PR</p>
+                            </div>
+                            <div class="contract-type-card border-2 border-slate-200 rounded-lg p-4 cursor-pointer hover:border-primary hover:bg-blue-50 transition" onclick="constructor.selectType('saas')">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-cloud text-primary mr-3 text-xl"></i>
+                                    <span class="font-bold">SaaS / Подписка</span>
+                                </div>
+                                <p class="text-sm text-slate-600">Доступ к сервису, лицензии, облачные решения</p>
+                            </div>
+                            <div class="contract-type-card border-2 border-slate-200 rounded-lg p-4 cursor-pointer hover:border-primary hover:bg-blue-50 transition" onclick="constructor.selectType('freelance')">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-user-tie text-primary mr-3 text-xl"></i>
+                                    <span class="font-bold">Фриланс / Аутсорс</span>
+                                </div>
+                                <p class="text-sm text-slate-600">Дизайн, копирайтинг, консалтинг, переводы</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Role -->
+                    <div class="step-content hidden" data-step="2">
+                        <h3 class="text-xl font-bold mb-6">Кто вы по договору?</h3>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="border-2 border-primary bg-blue-50 rounded-xl p-6 cursor-pointer text-center transition hover:shadow-lg" onclick="constructor.setRole('executor')">
+                                <i class="fas fa-hammer text-4xl text-primary mb-4"></i>
+                                <h4 class="font-bold text-lg mb-2">Исполнитель</h4>
+                                <p class="text-sm text-slate-600">Выполняете работу или предоставляете услугу. Договор будет защищать вашу оплату и права.</p>
+                            </div>
+                            <div class="border-2 border-slate-200 rounded-xl p-6 cursor-pointer text-center hover:border-primary hover:bg-blue-50 transition" onclick="constructor.setRole('customer')">
+                                <i class="fas fa-hand-holding-usd text-4xl text-slate-400 mb-4"></i>
+                                <h4 class="font-bold text-lg mb-2">Заказчик</h4>
+                                <p class="text-sm text-slate-600">Оплачиваете работу. Договор защитит от некачественного исполнения и срыва сроков.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Payment -->
+                    <div class="step-content hidden" data-step="3">
+                        <h3 class="text-xl font-bold mb-6">Условия оплаты</h3>
+                        <div class="space-y-4">
+                            <div class="border border-slate-200 rounded-lg p-4 hover:border-primary transition">
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <div>
+                                        <span class="font-medium block">Предоплата</span>
+                                        <span class="text-sm text-slate-500">Часть суммы до начала работ</span>
+                                    </div>
+                                    <select id="prepayment" class="border border-slate-300 rounded-lg px-4 py-2 outline-none focus:border-primary bg-white">
+                                        <option value="0">Нет</option>
+                                        <option value="30">30%</option>
+                                        <option value="50" selected>50%</option>
+                                        <option value="100">100%</option>
+                                    </select>
+                                </label>
+                            </div>
+                            
+                            <div class="border border-slate-200 rounded-lg p-4 hover:border-primary transition">
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <div>
+                                        <span class="font-medium block">Поэтапная оплата</span>
+                                        <span class="text-sm text-slate-500">Разбиение проекта на этапы с оплатой каждого</span>
+                                    </div>
+                                    <input type="checkbox" id="stages" checked class="w-5 h-5 text-primary rounded focus:ring-primary">
+                                </label>
+                            </div>
+
+                            <div class="border border-slate-200 rounded-lg p-4">
+                                <label class="block mb-2 font-medium">Общая сумма договора (₽)</label>
+                                <input type="number" id="total-sum" placeholder="100000" class="w-full border border-slate-300 rounded-lg px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: IP -->
+                    <div class="step-content hidden" data-step="4">
+                        <h3 class="text-xl font-bold mb-6">Интеллектуальные права</h3>
+                        <div class="space-y-4">
+                            <label class="block text-sm font-medium text-slate-700 mb-3">Передача прав</label>
+                            <div class="space-y-3">
+                                <label class="flex items-center p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                                    <input type="radio" name="ip-rights" value="exclusive" class="text-primary focus:ring-primary w-4 h-4" checked>
+                                    <div class="ml-3">
+                                        <span class="block font-medium">Исключительные права</span>
+                                        <span class="text-sm text-slate-500">Заказчик становится полноправным владельцем</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                                    <input type="radio" name="ip-rights" value="license" class="text-primary focus:ring-primary w-4 h-4">
+                                    <div class="ml-3">
+                                        <span class="block font-medium">Лицензия</span>
+                                        <span class="text-sm text-slate-500">Право использования, автор остается владельцем</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                                    <input type="radio" name="ip-rights" value="work_for_hire" class="text-primary focus:ring-primary w-4 h-4">
+                                    <div class="ml-3">
+                                        <span class="block font-medium">Служебное произведение</span>
+                                        <span class="text-sm text-slate-500">Для трудовых договоров и аутсорса персонала</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: Liability -->
+                    <div class="step-content hidden" data-step="5">
+                        <h3 class="text-xl font-bold mb-6">Ответственность сторон</h3>
+                        <div class="space-y-4">
+                            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                                <div class="flex items-start">
+                                    <i class="fas fa-info-circle text-warning mt-1 mr-2"></i>
+                                    <p class="text-sm text-slate-700">Мы автоматически ограничим вашу ответственность разумными пределами согласно ст. 15, 393 ГК РФ</p>
+                                </div>
+                            </div>
+
+                            <div class="border border-slate-200 rounded-lg p-4">
+                                <label class="flex items-center justify-between mb-2">
+                                    <span class="font-medium">Неустойка за просрочку (в день)</span>
+                                    <select id="penalty-rate" class="border border-slate-300 rounded-lg px-3 py-1 bg-white">
+                                        <option value="0.1">0,1%</option>
+                                        <option value="0.5" selected>0,5%</option>
+                                        <option value="1">1%</option>
+                                    </select>
+                                </label>
+                                <p class="text-xs text-slate-500">Рекомендуем не более 0,5% для соответствия ст. 333 ГК РФ</p>
+                            </div>
+
+                            <div class="border border-slate-200 rounded-lg p-4">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" id="limit-liability" checked class="w-5 h-5 text-primary rounded focus:ring-primary mr-3">
+                                    <div>
+                                        <span class="font-medium block">Ограничить ответственность размером договора</span>
+                                        <span class="text-sm text-slate-500">Защита от неограниченных убытков</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 6: Final -->
+                    <div class="step-content hidden" data-step="6">
+                        <h3 class="text-xl font-bold mb-6">Дополнительные условия</h3>
+                        <div class="space-y-4">
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <label class="flex items-center p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                                    <input type="checkbox" id="nda-clause" class="text-primary rounded focus:ring-primary mr-3 w-5 h-5">
+                                    <span class="font-medium">NDA (секретность)</span>
+                                </label>
+                                <label class="flex items-center p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                                    <input type="checkbox" id="non-compete" class="text-primary rounded focus:ring-primary mr-3 w-5 h-5">
+                                    <span class="font-medium">Неконкуренция</span>
+                                </label>
+                                <label class="flex items-center p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                                    <input type="checkbox" id="force-majeure" checked class="text-primary rounded focus:ring-primary mr-3 w-5 h-5">
+                                    <span class="font-medium">Форс-мажор</span>
+                                </label>
+                                <label class="flex items-center p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                                    <input type="checkbox" id="arbitration" class="text-primary rounded focus:ring-primary mr-3 w-5 h-5">
+                                    <span class="font-medium">Арбитражный суд</span>
+                                </label>
+                            </div>
+
+                            <div class="border border-slate-200 rounded-lg p-4 mt-4">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Срок действия договора</label>
+                                <input type="text" id="contract-term" placeholder="До окончания работ и окончательного расчета" class="w-full border border-slate-300 rounded-lg px-4 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="flex justify-between mt-8 pt-6 border-t border-slate-200">
+                        <button onclick="constructor.prevStep()" id="prev-btn" class="px-6 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition" disabled>
+                            <i class="fas fa-arrow-left mr-2"></i> Назад
+                        </button>
+                        <button onclick="constructor.nextStep()" id="next-btn" class="px-6 py-2 bg-primary hover:bg-blue-800 text-white rounded-lg font-medium shadow-lg shadow-blue-900/20 transition">
+                            Далее <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                        <button onclick="constructor.generate()" id="generate-btn" class="hidden px-6 py-2 bg-success hover:bg-green-700 text-white rounded-lg font-medium shadow-lg shadow-green-900/20 transition">
+                            <i class="fas fa-file-download mr-2"></i> Создать договор
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Panel -->
+            <div id="contract-preview" class="hidden mt-8 bg-white rounded-xl border border-slate-200 shadow-sm p-8">
+                <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
+                    <h3 class="font-bold text-lg">Предпросмотр договора</h3>
+                    <div class="space-x-3">
+                        <button onclick="constructor.editContract()" class="text-slate-600 hover:text-primary text-sm font-medium transition">
+                            <i class="fas fa-edit mr-1"></i> Редактировать
+                        </button>
+                        <button onclick="constructor.downloadContract()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-800 transition">
+                            <i class="fas fa-download mr-1"></i> Скачать DOCX
+                        </button>
+                    </div>
+                </div>
+                <div class="prose max-w-none text-sm text-slate-700" id="contract-text">
+                    <!-- Generated content -->
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="chat-view">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-slate-900 mb-2">Анализ переписки</h1>
+                <p class="text-slate-600">Загрузите переписку из мессенджеров. Найдем согласованные условия и изменения ТЗ.</p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8" style="height: calc(100vh - 250px);">
+                <!-- Upload & Settings -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-lg mb-4">Источник</h3>
+                        <div class="space-y-3">
+                            <button class="w-full flex items-center p-3 border border-slate-200 rounded-lg hover:border-primary hover:bg-blue-50 transition text-left" onclick="chat.selectSource('telegram')">
+                                <i class="fab fa-telegram text-blue-500 text-xl mr-3"></i>
+                                <div>
+                                    <div class="font-medium">Telegram</div>
+                                    <div class="text-xs text-slate-500">Экспорт из чата</div>
+                                </div>
+                            </button>
+                            <button class="w-full flex items-center p-3 border border-slate-200 rounded-lg hover:border-primary hover:bg-blue-50 transition text-left" onclick="chat.selectSource('whatsapp')">
+                                <i class="fab fa-whatsapp text-green-500 text-xl mr-3"></i>
+                                <div>
+                                    <div class="font-medium">WhatsApp</div>
+                                    <div class="text-xs text-slate-500">История сообщений</div>
+                                </div>
+                            </button>
+                            <button class="w-full flex items-center p-3 border border-slate-200 rounded-lg hover:border-primary hover:bg-blue-50 transition text-left" onclick="chat.selectSource('email')">
+                                <i class="fas fa-envelope text-slate-500 text-xl mr-3"></i>
+                                <div>
+                                    <div class="font-medium">Email</div>
+                                    <div class="text-xs text-slate-500">Переписка из почты</div>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div class="mt-6 pt-6 border-t border-slate-200">
+                            <button onclick="chat.loadDemo()" class="w-full py-2 border-2 border-primary text-primary rounded-lg font-medium hover:bg-primary hover:text-white transition">
+                                <i class="fas fa-play mr-2"></i> Загрузить демо-переписку
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <h4 class="font-semibold text-primary mb-2"><i class="fas fa-lightbulb mr-2"></i>Что ищем:</h4>
+                        <ul class="text-sm text-slate-700 space-y-1">
+                            <li>• Устное согласование условий</li>
+                            <li>• Изменения ТЗ и сроков</li>
+                            <li>• Признание объема работ</li>
+                            <li>• Факт акцепта результата</li>
+                            <li>• Ссылки на оплату</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Chat Preview & Analysis -->
+                <div class="lg:col-span-2 grid grid-rows-2 gap-6 h-full">
+                    <!-- Chat View -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                            <span class="font-medium text-sm">Предпросмотр переписки</span>
+                            <span class="text-xs text-slate-500" id="message-count">0 сообщений</span>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50" id="chat-messages">
+                            <div class="text-center text-slate-400 text-sm py-8">
+                                <i class="fas fa-comments text-4xl mb-3 text-slate-300"></i>
+                                <p>Загрузите переписку для анализа</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analysis Results -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 overflow-y-auto">
+                        <h3 class="font-bold text-lg mb-4">Юридически значимые моменты</h3>
+                        <div id="chat-analysis" class="space-y-3">
+                            <div class="text-center text-slate-400 py-8">
+                                <i class="fas fa-robot text-3xl mb-2 text-slate-300"></i>
+                                <p>Анализ не проведен</p>
+                                <p class="text-xs mt-1">Загрузите демо-переписку для примера</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="risks-view">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-slate-900 mb-2">Оценка финансовых рисков</h1>
+                <p class="text-slate-600">Рассчитайте максимальную ответственность по договору и проверьте соразмерность неустойки</p>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- Calculator -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                    <h3 class="font-bold text-lg mb-4">Калькулятор ответственности</h3>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Сумма договора (₽)</label>
+                        <input type="number" id="contract-amount" class="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-primary outline-none" placeholder="100000" oninput="risks.calculate()">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Неустойка (% в день)</label>
+                            <input type="number" id="penalty-percent" class="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-primary outline-none" placeholder="0.5" step="0.1" value="0.5" oninput="risks.calculate()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Макс. просрочка (дней)</label>
+                            <input type="number" id="delay-days" class="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-primary outline-none" placeholder="30" value="30" oninput="risks.calculate()">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Штрафы за нарушение</label>
+                        <input type="number" id="fine-amount" class="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-primary outline-none" placeholder="50000" oninput="risks.calculate()">
+                    </div>
+
+                    <div class="flex items-center p-3 bg-slate-50 rounded-lg">
+                        <input type="checkbox" id="unilateral-refusal" class="w-5 h-5 text-primary rounded focus:ring-primary mr-3" onchange="risks.calculate()">
+                        <label class="text-sm text-slate-700 cursor-pointer">Есть пункт о одностороннем отказе с возмещением убытков</label>
+                    </div>
+
+                    <button onclick="risks.calculate()" class="w-full bg-primary hover:bg-blue-800 text-white py-3 rounded-lg font-semibold transition shadow-lg shadow-blue-900/20">
+                        <i class="fas fa-calculator mr-2"></i> Рассчитать риски
+                    </button>
+                </div>
+
+                <!-- Results -->
+                <div class="space-y-6">
+                    <div id="risk-result" class="hidden bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-lg mb-4">Результат анализа</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-4 bg-red-50 rounded-lg border border-red-100">
+                                <span class="font-medium text-slate-700">Максимальная ответственность:</span>
+                                <span class="text-2xl font-bold text-danger" id="max-liability">0 ₽</span>
+                            </div>
+
+                            <div class="space-y-2 bg-slate-50 p-4 rounded-lg">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-600">Сумма неустойки:</span>
+                                    <span class="font-medium" id="penalty-sum">0 ₽</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-600">Штрафы:</span>
+                                    <span class="font-medium" id="fines-sum">0 ₽</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-600">Убытки (при отказе):</span>
+                                    <span class="font-medium" id="damages-sum">0 ₽</span>
+                                </div>
+                            </div>
+
+                            <div id="article-333-warning" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                <div class="flex items-start">
+                                    <i class="fas fa-exclamation-triangle text-warning mt-1 mr-2"></i>
+                                    <div>
+                                        <p class="font-medium text-slate-800">Риск применения ст. 333 ГК РФ</p>
+                                        <p class="text-sm text-slate-600 mt-1">Неустойка может быть снижена судом как несоразмерная. Рекомендуем не более 0,1% в день.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                                <h4 class="font-medium text-primary mb-2"><i class="fas fa-shield-alt mr-2"></i>Рекомендации:</h4>
+                                <ul class="text-sm text-slate-700 space-y-1" id="recommendations">
+                                    <li>• Укажите конкретную сумму штрафов вместо процентов</li>
+                                    <li>• Ограничьте ответственность пределом договора</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Card -->
+                    <div class="bg-slate-900 text-white p-6 rounded-xl">
+                        <h4 class="font-bold mb-3"><i class="fas fa-book-open mr-2"></i>Полезные статьи ГК РФ</h4>
+                        <ul class="space-y-2 text-sm text-slate-300">
+                            <li class="flex items-start">
+                                <span class="text-secondary mr-2">•</span>
+                                <div>
+                                    <strong class="text-white">Ст. 330</strong> — понятие неустойки
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-secondary mr-2">•</span>
+                                <div>
+                                    <strong class="text-white">Ст. 333</strong> — снижение размера неустойки
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-secondary mr-2">•</span>
+                                <div>
+                                    <strong class="text-white">Ст. 15</strong> — реальные убытки
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-secondary mr-2">•</span>
+                                <div>
+                                    <strong class="text-white">Ст. 310</strong> — односторонний отказ
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Risk Levels -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 class="font-bold mb-4">Уровни риска неустойки</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                <span class="text-sm"><i class="fas fa-check-circle text-success mr-2"></i>Безопасно (до 0,1%)</span>
+                                <span class="text-xs text-slate-500">~36.5% годовых</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
+                                <span class="text-sm"><i class="fas fa-exclamation-circle text-warning mr-2"></i>Умеренно (0,1% - 0,5%)</span>
+                                <span class="text-xs text-slate-500">~182% годовых</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                                <span class="text-sm"><i class="fas fa-times-circle text-danger mr-2"></i>Высокий риск (> 0,5%)</span>
+                                <span class="text-xs text-slate-500">Риск снижения по ст. 333</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        // Router
+        const router = {
+            currentRoute: 'home',
+            navigate(route) {
+                this.currentRoute = route;
+                this.render();
+                window.scrollTo(0, 0);
+            },
+            render() {
+                const app = document.getElementById('app');
+                const template = document.getElementById(`${this.currentRoute}-view`);
+                if (template) {
+                    app.innerHTML = template.innerHTML;
+                    // Initialize specific view logic
+                    if (this.currentRoute === 'analyzer') analyzer.init();
+                    if (this.currentRoute === 'constructor') constructor.init();
+                    if (this.currentRoute === 'chat') chat.init();
+                    if (this.currentRoute === 'risks') risks.init();
+                }
+            }
+        };
+
+        // App State
+        const app = {
+            user: null,
+            login() {
+                this.user = { name: 'Демо', email: 'demo@legalflow.ru' };
+                const loginBtn = document.getElementById('login-btn');
+                const userSection = document.getElementById('user-section');
+                if (loginBtn) loginBtn.classList.add('hidden');
+                if (userSection) userSection.classList.remove('hidden');
+                router.navigate('analyzer');
+            }
+        };
+
+        // Contract Analyzer
+        const analyzer = {
+            role: 'executor',
+            risks: [
+                {
+                    level: 'high',
+                    title: 'Одностороннее изменение объема работ',
+                    text: '«Заказчик вправе в одностороннем порядке изменить объем работ»',
+                    article: 'Ст. 310 ГК РФ',
+                    description: 'Изменение договора возможно только по соглашению сторон. Данная формулировка дает заказчику неограниченное право менять ТЗ.',
+                    recommendation: 'Заменить на: «Изменения возможны только при согласовании сторон дополнительным соглашением с корректировкой стоимости и сроков»'
+                },
+                {
+                    level: 'high',
+                    title: 'Неограниченная ответственность исполнителя',
+                    text: '«Исполнитель несет ответственность за все убытки Заказчика»',
+                    article: 'Ст. 15, 393 ГК РФ',
+                    description: 'Отсутствие ограничения ответственности может привести к требованиям о возмещении недополученной прибыли, косвенных убытков.',
+                    recommendation: 'Добавить: «Ответственность Исполнителя ограничена размером оплаты по настоящему договору»'
+                },
+                {
+                    level: 'medium',
+                    title: 'Несоразмерная неустойка',
+                    text: '«Неустойка 1% за каждый день просрочки»',
+                    article: 'Ст. 333 ГК РФ',
+                    description: '365% годовых значительно превышает ключевую ставку ЦБ. Суд снизит неустойку, но процесс займет время.',
+                    recommendation: 'Установить 0,1% (36,5% годовых) или фиксированную сумму за день просрочки'
+                },
+                {
+                    level: 'medium',
+                    title: 'Передача ИС без поэтапной оплаты',
+                    text: '«Исключительные права передаются после полной оплаты»',
+                    article: 'Ст. 1234 ГК РФ',
+                    description: 'Риск неполучения оплаты после передачи прав. При банкротстве заказчика права попадут в конкурсную массу.',
+                    recommendation: 'Разбить оплату на этапы: 50% предоплата, 50% до передачи исходников'
+                },
+                {
+                    level: 'low',
+                    title: 'Отсутствие срока рассмотрения результата',
+                    text: '«Заказчик обязуется рассмотреть результат работ»',
+                    article: 'Ст. 720 ГК РФ',
+                    description: 'Без конкретного срока заказчик может затягивать приемку работ бесконечно.',
+                    recommendation: 'Добавить: «В течение 5 рабочих дней с момента получения. По истечении — работа считается принятой»'
+                }
+            ],
+            init() {
+                // Initialize if needed
+            },
+            setRole(btn, role) {
+                this.role = role;
+                document.querySelectorAll('.role-btn').forEach(b => {
+                    b.classList.remove('active', 'border-2', 'border-primary', 'bg-blue-50', 'text-primary');
+                    b.classList.add('border', 'border-slate-300', 'text-slate-600');
+                });
+                btn.classList.remove('border', 'border-slate-300', 'text-slate-600');
+                btn.classList.add('active', 'border-2', 'border-primary', 'bg-blue-50', 'text-primary');
+            },
+            handleFile(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const btn = document.querySelector('button[onclick="analyzer.analyze()"]');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Загрузка...';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        this.analyze();
+                    }, 1000);
+                }
+            },
+            analyze() {
+                const emptyState = document.getElementById('empty-state');
+                const results = document.getElementById('analysis-results');
+                if (emptyState) emptyState.style.display = 'none';
+                if (results) results.style.display = 'block';
+                this.renderRisks();
+                this.renderDocument();
+            },
+            loadDemo() {
+                const contractType = document.getElementById('contract-type');
+                if (contractType) contractType.value = 'podryad';
+                this.analyze();
+            },
+            renderRisks() {
+                const container = document.getElementById('risks-container');
+                if (!container) return;
+                
+                const highRisks = this.risks.filter(r => r.level === 'high').length;
+                const mediumRisks = this.risks.filter(r => r.level === 'medium').length;
+                const lowRisks = this.risks.filter(r => r.level === 'low').length;
+                
+                document.getElementById('high-risks-count').textContent = highRisks;
+                document.getElementById('medium-risks-count').textContent = mediumRisks;
+                document.getElementById('low-risks-count').textContent = lowRisks;
+                
+                container.innerHTML = this.risks.map(risk => {
+                    const riskClass = risk.level === 'high' ? 'risk-high' : risk.level === 'medium' ? 'risk-medium' : 'risk-low';
+                    const badgeClass = risk.level === 'high' ? 'bg-danger/10 text-danger' : risk.level === 'medium' ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success';
+                    const riskLabel = risk.level === 'high' ? 'Высокий риск' : risk.level === 'medium' ? 'Средний риск' : 'Замечание';
+                    
+                    return `
+                        <div class="${riskClass} p-6 rounded-lg border border-slate-200 shadow-sm bg-white">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center flex-wrap gap-2">
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold ${badgeClass}">${riskLabel}</span>
+                                    <h4 class="font-bold text-slate-900">${risk.title}</h4>
+                                </div>
+                                <span class="text-xs font-medium text-secondary bg-blue-50 px-2 py-1 rounded whitespace-nowrap">${risk.article}</span>
+                            </div>
+                            
+                            <div class="bg-slate-50 p-3 rounded border-l-4 border-slate-400 mb-3">
+                                <p class="text-sm text-slate-700 italic">"${risk.text}"</p>
+                            </div>
+                            
+                            <p class="text-sm text-slate-600 mb-3">${risk.description}</p>
+                            
+                            <div class="bg-green-50 border border-green-100 rounded-lg p-3">
+                                <div class="flex items-start">
+                                    <i class="fas fa-check-circle text-success mt-1 mr-2 text-sm"></i>
+                                    <div>
+                                        <span class="text-xs font-semibold text-slate-700 block mb-1">Рекомендация:</span>
+                                        <p class="text-sm text-slate-700">${risk.recommendation}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+            renderDocument() {
+                const preview = document.getElementById('document-preview');
+                if (!preview) return;
+                
+                preview.innerHTML = `
+                    <p class="mb-4"><strong>ДОГОВОР ПОДРЯДА № 45/2024</strong></p>
+                    
+                    <p class="mb-2"><strong>г. Москва</strong> «15» января 2024 г.</p>
+                    
+                    <p class="mb-4">ООО «Заказчик», именуемое в дальнейшем «Заказчик», в лице директора Иванова И.И., действующего на основании Устава, с одной стороны, и Иванов Иван Иванович, именуемый в дальнейшем «Исполнитель», с другой стороны, совместно именуемые «Стороны», заключили настоящий договор о нижеследующем:</p>
+                    
+                    <p class="mb-4"><strong>1. Предмет договора</strong></p>
+                    <p class="mb-4">1.1. Исполнитель обязуется выполнить работы по разработке веб-сайта, а Заказчик обязуется принять и оплатить результат.</p>
+                    
+                    <p class="mb-4"><strong>2. Стоимость работ</strong></p>
+                    <p class="mb-4">2.1. Общая стоимость работ составляет 150 000 (сто пятьдесят тысяч) рублей.</p>
+                    
+                    <p class="mb-4 text-red-700 bg-red-50 px-2 py-2 rounded cursor-help border border-red-200" title="Высокий риск: одностороннее изменение">
+                        <strong>4.2.</strong> <span class="border-b-2 border-danger">Заказчик вправе в одностороннем порядке изменить объем работ</span> без согласования с Исполнителем.
+                        <i class="fas fa-exclamation-triangle text-danger ml-2"></i>
+                    </p>
+                    
+                    <p class="mb-4">4.3. Срок выполнения работ — 30 календарных дней с момента внесения предоплаты.</p>
+                    
+                    <p class="mb-4 text-amber-700 bg-amber-50 px-2 py-2 rounded cursor-help border border-amber-200" title="Средний риск: несоразмерная неустойка">
+                        <strong>6.1.</strong> <span class="border-b-2 border-warning">При нарушении сроков исполнитель уплачивает неустойку в размере 1% от цены договора за каждый день просрочки.</span>
+                        <i class="fas fa-exclamation-triangle text-warning ml-2"></i>
+                    </p>
+                    
+                    <p class="mb-4 text-red-700 bg-red-50 px-2 py-2 rounded cursor-help border border-red-200" title="Высокий риск: неограниченная ответственность">
+                        <strong>8.1.</strong> <span class="border-b-2 border-danger">Исполнитель несет ответственность за все убытки Заказчика, включая упущенную выгоду.</span>
+                        <i class="fas fa-exclamation-triangle text-danger ml-2"></i>
+                    </p>
+                    
+                    <p class="mb-4 text-green-700 bg-green-50 px-2 py-2 rounded border border-green-200" title="Замечание: отсутствует срок рассмотрения">
+                        <strong>9.1.</strong> <span class="border-b-2 border-success">Заказчик обязуется рассмотреть результат работ.</span>
+                        <i class="fas fa-info-circle text-success ml-2"></i>
+                    </p>
+                    
+                    <p class="mb-4 text-slate-400">[Остальной текст договора без критических замечаний...]</p>
+                `;
+            },
+            exportReport() {
+                alert('Отчет формируется в PDF...');
+            }
+        };
+
+        // Contract Constructor
+        const constructor = {
+            currentStep: 1,
+            data: {},
+            init() {
+                this.currentStep = 1;
+                this.data = {};
+                this.updateProgress();
+                this.updateStepVisibility();
+            },
+            selectType(type) {
+                this.data.type = type;
+                document.querySelectorAll('.contract-type-card').forEach(card => {
+                    card.classList.remove('border-primary', 'bg-blue-50');
+                    card.classList.add('border-slate-200');
+                });
+                event.currentTarget.classList.remove('border-slate-200');
+                event.currentTarget.classList.add('border-primary', 'bg-blue-50');
+            },
+            setRole(role) {
+                this.data.role = role;
+                this.nextStep();
+            },
+            nextStep() {
+                if (this.currentStep < 6) {
+                    this.currentStep++;
+                    this.updateStepVisibility();
+                    this.updateProgress();
+                    this.updateButtons();
+                }
+            },
+            prevStep() {
+                if (this.currentStep > 1) {
+                    this.currentStep--;
+                    this.updateStepVisibility();
+                    this.updateProgress();
+                    this.updateButtons();
+                }
+            },
+            updateStepVisibility() {
+                document.querySelectorAll('.step-content').forEach(el => {
+                    const step = parseInt(el.dataset.step);
+                    if (step === this.currentStep) {
+                        el.classList.remove('hidden');
+                    } else {
+                        el.classList.add('hidden');
+                    }
+                });
+            },
+            updateProgress() {
+                const percent = (this.currentStep / 6) * 100;
+                const progressBar = document.getElementById('progress-bar');
+                const progressPercent = document.getElementById('progress-percent');
+                const currentStep = document.getElementById('current-step');
+                
+                if (progressBar) progressBar.style.width = `${percent}%`;
+                if (progressPercent) progressPercent.textContent = `${Math.round(percent)}%`;
+                if (currentStep) currentStep.textContent = this.currentStep;
+            },
+            updateButtons() {
+                const prevBtn = document.getElementById('prev-btn');
+                const nextBtn = document.getElementById('next-btn');
+                const generateBtn = document.getElementById('generate-btn');
+                
+                if (prevBtn) prevBtn.disabled = this.currentStep === 1;
+                
+                if (this.currentStep === 6) {
+                    if (nextBtn) nextBtn.classList.add('hidden');
+                    if (generateBtn) generateBtn.classList.remove('hidden');
+                } else {
+                    if (nextBtn) nextBtn.classList.remove('hidden');
+                    if (generateBtn) generateBtn.classList.add('hidden');
+                }
+            },
+            generate() {
+                const preview = document.getElementById('contract-preview');
+                const text = document.getElementById('contract-text');
+                
+                if (preview) preview.classList.remove('hidden');
+                
+                const typeNames = {
+                    'dev': 'разработки программного обеспечения',
+                    'marketing': 'оказания маркетинговых услуг',
+                    'saas': 'предоставления доступа к SaaS',
+                    'freelance': 'выполнения работ по заданию'
+                };
+                
+                const prepayment = document.getElementById('prepayment')?.value || '50';
+                const hasStages = document.getElementById('stages')?.checked ?? true;
+                const totalSum = document.getElementById('total-sum')?.value || '100 000';
+                const ipRightsEl = document.querySelector('input[name="ip-rights"]:checked');
+                const ipRights = ipRightsEl ? ipRightsEl.value : 'exclusive';
+                const penaltyRate = document.getElementById('penalty-rate')?.value || '0.5';
+                const limitLiability = document.getElementById('limit-liability')?.checked ?? true;
+                const ndaClause = document.getElementById('nda-clause')?.checked ?? false;
+                const forceMajeure = document.getElementById('force-majeure')?.checked ?? true;
+                
+                if (text) {
+                    text.innerHTML = `
+                        <div class="text-center mb-8">
+                            <h2 class="text-xl font-bold mb-2">ДОГОВОР ПОДРЯДА № ___</h2>
+                            <p class="text-slate-600">на ${typeNames[this.data.type] || 'оказание услуг'}</p>
+                        </div>
+                        
+                        <div class="space-y-4 text-slate-700">
+                            <p><strong>г. Москва</strong> «___» __________ 2024 г.</p>
+                            
+                            <p>_______________________________, именуем___ в дальнейшем «Заказчик», в лице _________________________________, действующего на основании _______________, с одной стороны, и _____________________________, именуемый в дальнейшем «Исполнитель», с другой стороны, совместно именуемые «Стороны», заключили настоящий договор о нижеследующем:</p>
+                            
+                            <p class="font-bold mt-6">1. Предмет договора</p>
+                            <p>1.1. Исполнитель обязуется выполнить работы по ${typeNames[this.data.type] || '...'}, а Заказчик обязуется принять и оплатить результат.</p>
+                            <p>1.2. Детальное описание работ и требования к результату содержатся в Техническом задании (Приложение №1), являющемся неотъемлемой частью настоящего договора.</p>
+                            
+                            <p class="font-bold mt-6">2. Стоимость и порядок расчетов</p>
+                            <p>2.1. Общая стоимость работ составляет <strong>${Number(totalSum).toLocaleString('ru-RU')} (${this.numberToWords(totalSum)}) рублей</strong> ${hasStages ? 'и определяется поэтапно согласно Приложению №2' : ''}.</p>
+                            ${prepayment > 0 ? `<p>2.2. Предоплата в размере ${prepayment}% от общей стоимости (${(Number(totalSum) * prepayment / 100).toLocaleString('ru-RU')} руб.) вносится в течение 3 банковских дней с момента подписания договора.</p>` : '<p>2.2. Оплата производится после подписания акта сдачи-приемки.</p>'}
+                            <p>2.${prepayment > 0 ? '3' : '2'}. Окончательный расчет производится в течение 5 банковских дней после подписания акта сдачи-приемки.</p>
+                            <p>2.${prepayment > 0 ? '4' : '3'}. При просрочке оплаты Заказчик уплачивает неустойку в размере 0,1% от суммы задолженности за каждый день просрочки.</p>
+                            
+                            <p class="font-bold mt-6">3. Интеллектуальные права</p>
+                            <p>3.1. ${ipRights === 'exclusive' ? 'Исключительные права на результат работ передаются Заказчику после полной оплаты по настоящему договору. До момента передачи прав Исполнитель сохраняет все права на созданные материалы.' : ipRights === 'license' ? 'На Заказчика передается простая (неисключительная) лицензия на использование результата в течение срока действия договора. Авторские права остаются у Исполнителя.' : 'Результат работ является служебным произведением, исключительные права на которое принадлежат Заказчику с момента создания.'}</p>
+                            
+                            <p class="font-bold mt-6">4. Сроки выполнения</p>
+                            <p>4.1. Исполнитель обязуется выполнить работы в срок до «___» __________ 2024 г.</p>
+                            <p>4.2. Заказчик обязуется рассмотреть результат работ в течение 5 рабочих дней с момента получения. По истечении указанного срока работа считается принятой, если не заявлены мотивированные возражения.</p>
+                            
+                            <p class="font-bold mt-6">5. Ответственность сторон</p>
+                            <p>5.1. За нарушение сроков выполнения работ Исполнитель уплачивает неустойку в размере ${penaltyRate}% от цены просроченных работ за каждый день просрочки, но не более 10% от цены договора.</p>
+                            ${limitLiability ? `<p class="bg-green-50 p-3 rounded border border-green-200 my-2"><strong>5.2. Ограничение ответственности:</strong> Ответственность Исполнителя по настоящему договору ограничена размером оплаты по договору. Исполнитель не несет ответственности за упущенную выгоду, косвенные убытки и упущенную выгоду Заказчика.</p>` : ''}
+                            
+                            ${ndaClause ? `<p class="font-bold mt-6">6. Конфиденциальность (NDA)</p>
+                            <p>6.1. Стороны обязуются сохранять конфиденциальность информации, полученной в ходе исполнения договора, в течение 3 лет с момента его окончания.</p>` : ''}
+                            
+                            ${forceMajeure ? `<p class="font-bold mt-6">${ndaClause ? '7' : '6'}. Форс-мажор</p>
+                            <p>${ndaClause ? '7' : '6'}.1. Стороны освобождаются от ответственности за частичное или полное неисполнение обязательств по настоящему договору, если это явилось следствием обстоятельств непреодолимой силы.</p>` : ''}
+                            
+                            <p class="font-bold mt-6">${(ndaClause ? 1 : 0) + (forceMajeure ? 1 : 0) + 6}. Заключительные положения</p>
+                            <p>${(ndaClause ? 1 : 0) + (forceMajeure ? 1 : 0) + 6}.1. Изменения и дополнения к настоящему договору действительны только если совершены в письменной форме и подписаны обеими сторонами.</p>
+                            <p>${(ndaClause ? 1 : 0) + (forceMajeure ? 1 : 0) + 6}.2. Настоящий договор составлен в двух экземплярах, имеющих одинаковую юридическую силу.</p>
+                            
+                            <div class="mt-8 grid grid-cols-2 gap-8">
+                                <div>
+                                    <p class="font-bold">ЗАКАЗЧИК:</p>
+                                    <p class="mt-4">__________________ / __________________</p>
+                                </div>
+                                <div>
+                                    <p class="font-bold">ИСПОЛНИТЕЛЬ:</p>
+                                    <p class="mt-4">__________________ / __________________</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                setTimeout(() => {
+                    preview?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            },
+            numberToWords(num) {
+                // Simplified number to words for demo
+                const number = parseInt(num);
+                if (isNaN(number)) return '...';
+                const units = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+                const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+                const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+                const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+                
+                if (number < 10) return units[number];
+                if (number < 20) return teens[number - 10];
+                if (number < 100) return tens[Math.floor(number / 10)] + (number % 10 ? ' ' + units[number % 10] : '');
+                if (number < 1000) return hundreds[Math.floor(number / 100)] + (number % 100 ? ' ' + this.numberToWords(number % 100) : '');
+                if (number < 1000000) {
+                    const thousands = Math.floor(number / 1000);
+                    const remainder = number % 1000;
+                    let thousandsWord = this.numberToWords(thousands);
+                    if (thousands === 1) thousandsWord = 'одна тысяча';
+                    else if (thousands === 2) thousandsWord = 'две тысячи';
+                    else if (thousands < 5) thousandsWord += ' тысячи';
+                    else thousandsWord += ' тысяч';
+                    return thousandsWord + (remainder ? ' ' + this.numberToWords(remainder) : '');
+                }
+                return number.toLocaleString('ru-RU');
+            },
+            editContract() {
+                alert('Редактор договора открывается...');
+            },
+            downloadContract() {
+                alert('Договор скачивается в формате DOCX...');
+            }
+        };
+
+        // Chat Analyzer
+        const chat = {
+            messages: [
+                { sender: 'other', text: 'Привет! Готовы начать проект по разработке сайта?', time: '10:05' },
+                { sender: 'me', text: 'Да, готов. Стоимость 150 000 ₽, срок 3 недели', time: '10:07' },
+                { sender: 'other', text: 'Отлично, договорились. Давай без договора, по-честному', time: '10:08' },
+                { sender: 'me', text: 'Хорошо, но предоплату 50% нужно', time: '10:10' },
+                { sender: 'other', text: 'Ок, перевожу. Только сделай еще логотип в подарок', time: '10:12' },
+                { sender: 'me', text: 'Договорились, логотип бонусом', time: '10:15' },
+                { sender: 'other', text: 'И еще нужно подключить оплату на сайте, это ведь входит?', time: '10:20' },
+                { sender: 'me', text: 'Это отдельно 20 000 ₽', time: '10:25' },
+                { sender: 'other', text: 'Но ты же сказал "полный сайт под ключ"', time: '10:26' },
+                { sender: 'me', text: 'Под ключ - это дизайн и верстка. Интеграции отдельно', time: '10:30' },
+                { sender: 'other', text: 'Давай так, ты делаешь оплату, а я тебе отличный отзыв напишу', time: '10:32' },
+                { sender: 'me', text: 'Ладно, только чтобы больше ничего не добавлялось', time: '10:35' }
+            ],
+            init() {
+                // Init
+            },
+            selectSource(source) {
+                alert(`Выбран источник: ${source}. Загрузите файл переписки.`);
+            },
+            loadDemo() {
+                this.renderChat();
+                this.analyze();
+            },
+            renderChat() {
+                const container = document.getElementById('chat-messages');
+                const countEl = document.getElementById('message-count');
+                if (!container) return;
+                
+                if (countEl) countEl.textContent = `${this.messages.length} сообщений`;
+                
+                container.innerHTML = this.messages.map(msg => `
+                    <div class="chat-bubble ${msg.sender === 'me' ? 'chat-right' : 'chat-left'}">
+                        <div class="text-sm">${msg.text}</div>
+                        <div class="text-xs text-slate-500 mt-1 text-right">${msg.time}</div>
+                    </div>
+                `).join('');
+                
+                // Scroll to bottom
+                container.scrollTop = container.scrollHeight;
+            },
+            analyze() {
+                const container = document.getElementById('chat-analysis');
+                if (!container) return;
+                
+                container.innerHTML = `
+                    <div class="bg-red-50 border-l-4 border-danger p-4 rounded-r-lg">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-exclamation-circle text-danger mr-2"></i>
+                            <strong class="text-slate-800">Отсутствие письменного договора</strong>
+                        </div>
+                        <p class="text-sm text-slate-700 mb-2">"Давай без договора, по-честному" — признание устной формы договора.</p>
+                        <p class="text-xs text-slate-500">Ст. 161 ГК РФ: сделки на сумму > 10 000 ₽ должны быть письменными</p>
+                    </div>
+
+                    <div class="bg-amber-50 border-l-4 border-warning p-4 rounded-r-lg">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-handshake text-warning mr-2"></i>
+                            <strong class="text-slate-800">Изменение предмета договора (scope creep)</strong>
+                        </div>
+                        <p class="text-sm text-slate-700">Добавление логотипа и интеграции оплаты выходит за рамки первоначальной договоренности (150 000 ₽ за сайт).</p>
+                    </div>
+
+                    <div class="bg-blue-50 border-l-4 border-secondary p-4 rounded-r-lg">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-money-bill-wave text-secondary mr-2"></i>
+                            <strong class="text-slate-800">Подтверждение предоплаты</strong>
+                        </div>
+                        <p class="text-sm text-slate-700">Согласие на предоплату 50% зафиксировано. Если перевод подтвержден, это доказывает заключение договора.</p>
+                    </div>
+
+                    <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-comment-dots text-purple-500 mr-2"></i>
+                            <strong class="text-slate-800">Устные договоренности о сроках</strong>
+                        </div>
+                        <p class="text-sm text-slate-700">«Срок 3 недели» — это существенное условие договора, зафиксированное в переписке.</p>
+                    </div>
+
+                    <div class="bg-green-50 border-l-4 border-success p-4 rounded-r-lg">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-shield-alt text-success mr-2"></i>
+                            <strong class="text-slate-800">Рекомендации</strong>
+                        </div>
+                        <ul class="text-sm text-slate-700 space-y-1">
+                            <li>• Немедленно оформить письменный договор или акт сдачи-приемки</li>
+                            <li>• Фиксировать объем работ в ТЗ до начала работ</li>
+                            <li>• Не добавлять новые функции без дополнительного соглашения</li>
+                            <li>• Сохранять подтверждения перевода предоплаты</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        };
+
+        // Risks Calculator
+        const risks = {
+            init() {
+                this.calculate();
+            },
+            calculate() {
+                const amount = parseFloat(document.getElementById('contract-amount')?.value) || 0;
+                const penaltyRate = parseFloat(document.getElementById('penalty-percent')?.value) || 0;
+                const days = parseInt(document.getElementById('delay-days')?.value) || 0;
+                const fine = parseFloat(document.getElementById('fine-amount')?.value) || 0;
+                const unilateral = document.getElementById('unilateral-refusal')?.checked || false;
+
+                const penaltySum = amount * (penaltyRate / 100) * days;
+                const damages = unilateral ? amount * 0.5 : 0;
+                const total = Math.min(penaltySum + fine + damages, amount * 3);
+
+                const riskResult = document.getElementById('risk-result');
+                if (riskResult) riskResult.classList.remove('hidden');
+                
+                const maxLiability = document.getElementById('max-liability');
+                const penaltySumEl = document.getElementById('penalty-sum');
+                const finesSumEl = document.getElementById('fines-sum');
+                const damagesSumEl = document.getElementById('damages-sum');
+                
+                if (maxLiability) maxLiability.textContent = new Intl.NumberFormat('ru-RU').format(total) + ' ₽';
+                if (penaltySumEl) penaltySumEl.textContent = new Intl.NumberFormat('ru-RU').format(penaltySum) + ' ₽';
+                if (finesSumEl) finesSumEl.textContent = new Intl.NumberFormat('ru-RU').format(fine) + ' ₽';
+                if (damagesSumEl) damagesSumEl.textContent = new Intl.NumberFormat('ru-RU').format(damages) + ' ₽';
+
+                // Article 333 warning
+                const annualRate = penaltyRate * 365;
+                const article333Warning = document.getElementById('article-333-warning');
+                if (article333Warning) {
+                    article333Warning.classList.toggle('hidden', annualRate <= 50);
+                }
+
+                // Update recommendations
+                const recommendations = document.getElementById('recommendations');
+                if (recommendations) {
+                    let recs = [];
+                    if (penaltyRate > 0.5) {
+                        recs.push('• Снизьте неустойку до 0,1-0,3% в день для избежания ст. 333 ГК РФ');
+                    }
+                    if (unilateral) {
+                        recs.push('• Добавьте конкретный перечень убытков подлежащих возмещению');
+                    }
+                    if (amount > 0 && penaltySum > amount) {
+                        recs.push('• Неустойка превышает сумму договора — это риск снижения судом');
+                    }
+                    if (recs.length === 0) {
+                        recs.push('• Укажите конкретную сумму штрафов вместо процентов');
+                        recs.push('• Ограничьте ответственность пределом договора');
+                    }
+                    recommendations.innerHTML = recs.map(r => `<li>${r}</li>`).join('');
+                }
+            }
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            router.render();
+        });
+    </script>
+</body>
+</html>

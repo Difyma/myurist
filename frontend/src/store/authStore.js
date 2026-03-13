@@ -56,11 +56,18 @@ export const useAuthStore = create(
           set({ isLoading: false })
           return { success: true, message: 'Код отправлен на ваш email' }
         } catch (error) {
+          let errorMessage = error.message || 'Ошибка отправки кода'
+          
+          // Handle rate limit error
+          if (error.message?.includes('rate limit') || error.status === 429) {
+            errorMessage = 'Слишком много попыток. Подождите 1 час перед следующей отправкой или используйте другой email.'
+          }
+          
           set({
-            error: error.message || 'Ошибка отправки кода',
+            error: errorMessage,
             isLoading: false,
           })
-          return { success: false, error: error.message }
+          return { success: false, error: errorMessage }
         }
       },
 

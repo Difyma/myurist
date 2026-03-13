@@ -7,6 +7,7 @@ import Analyzer from './pages/Analyzer'
 import Constructor from './pages/Constructor'
 import Chat from './pages/Chat'
 import Risks from './pages/Risks'
+import PrivacyPolicy from './pages/PrivacyPolicy'
 
 function App() {
   const { initAuth } = useAuthStore()
@@ -23,6 +24,7 @@ function App() {
         <Route path="constructor" element={<Constructor />} />
         <Route path="chat" element={<Chat />} />
         <Route path="risks" element={<Risks />} />
+        <Route path="privacy" element={<PrivacyPolicy />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

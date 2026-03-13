@@ -172,7 +172,7 @@ export default function LoginModal({ isOpen, onClose }) {
                   <Shield className="w-8 h-8 text-primary-600" />
                 </div>
                 <p className="text-sm text-slate-600">
-                  Введите 6-значный код, отправленный на ваш email
+                  Введите код подтверждения, отправленный на ваш email
                 </p>
               </div>
 
@@ -187,9 +187,9 @@ export default function LoginModal({ isOpen, onClose }) {
                   type="text"
                   id="code"
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="000000"
-                  maxLength={6}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="0000000000"
+                  maxLength={10}
                   className="block w-full px-4 py-3 text-center text-2xl tracking-widest border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   disabled={isLoading}
                   autoFocus
@@ -203,7 +203,7 @@ export default function LoginModal({ isOpen, onClose }) {
 
               <button
                 type="submit"
-                disabled={isLoading || code.length !== 6}
+                disabled={isLoading || code.length < 6}
                 className="w-full flex items-center justify-center px-4 py-3 bg-primary-700 text-white font-medium rounded-lg hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? (

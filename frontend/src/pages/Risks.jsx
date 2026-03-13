@@ -312,6 +312,15 @@ export default function Risks() {
               </div>
             </div>
           </div>
+          
+          {/* Disclaimer */}
+          <div className="mt-6 pt-6 border-t border-slate-200">
+            <p className="text-xs text-slate-500 text-center">
+              <strong>Примечание:</strong> Результаты расчета носят исключительно ознакомительный характер 
+              и не являются юридической консультацией. Фактический размер ответственности может отличаться 
+              и определяется судом в каждом конкретном случае.
+            </p>
+          </div>
         </div>
       </div>
     </div>

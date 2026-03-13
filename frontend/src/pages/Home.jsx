@@ -139,15 +139,15 @@ export default function Home() {
               <div className="mt-8 flex flex-wrap items-center gap-4 text-sm text-slate-500">
                 <div className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-success-500 mr-2" />
-                  152-ФЗ compliant
+                  AI + эксперты
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-success-500 mr-2" />
-                  Данные в РФ
+                  Ссылки на ГК РФ
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-success-500 mr-2" />
-                  Шифрование
+                  Шифрование данных
                 </div>
               </div>
             </div>
@@ -484,8 +484,8 @@ export default function Home() {
                 <li className="flex items-start">
                   <Server className="w-5 h-5 text-success-400 mt-1 mr-3 flex-shrink-0" />
                   <div>
-                    <strong className="block mb-1">Серверы в РФ</strong>
-                    <span className="text-slate-400 text-sm">Данные хранятся в дата-центрах Yandex Cloud (152-ФЗ)</span>
+                    <strong className="block mb-1">Безопасное хранение</strong>
+                    <span className="text-slate-400 text-sm">Данные хранятся в защищенных дата-центрах</span>
                   </div>
                 </li>
                 <li className="flex items-start">
@@ -622,9 +622,20 @@ export default function Home() {
                 <li><a href="#" className="hover:text-white transition">Помощь</a></li>
                 <li><a href="#" className="hover:text-white transition">API документация</a></li>
                 <li><a href="#" className="hover:text-white transition">Политика конфиденциальности</a></li>
-                <li><a href="#" className="hover:text-white transition">152-ФЗ</a></li>
               </ul>
             </div>
+          </div>
+          
+          {/* Disclaimer */}
+          <div className="border-t border-slate-800 pt-6 pb-4">
+            <p className="text-xs text-slate-500 text-center max-w-4xl mx-auto">
+              <strong>Юридическая оговорка:</strong> Сервис LegalFlow предоставляет информацию 
+              исключительно в ознакомительных целях и не является юридической консультацией. 
+              Результаты анализа не могут рассматриваться как официальные рекомендации или 
+              руководство к действию. Перед принятием юридически значимых решений рекомендуется 
+              обратиться к квалифицированному юристу. Мы не несем ответственности за последствия 
+              использования информации, полученной через сервис.
+            </p>
           </div>
           
           <div className="border-t border-slate-800 pt-8 text-sm text-center">

@@ -549,6 +549,15 @@ export default function Analyzer() {
           )}
         </div>
       </div>
+      
+      {/* Disclaimer */}
+      <div className="mt-8 pt-6 border-t border-slate-200">
+        <p className="text-xs text-slate-500 text-center max-w-4xl mx-auto">
+          <strong>Примечание:</strong> Результаты анализа носят исключительно ознакомительный характер 
+          и не являются юридической консультацией. Перед подписанием договора рекомендуется обратиться 
+          к квалифицированному юристу.
+        </p>
+      </div>
     </div>
   )
 }

@@ -5,7 +5,8 @@ import {
   getContract, 
   deleteContract,
   generateContract,
-  getGeneratedContracts 
+  getGeneratedContracts,
+  getAnalysisStatus
 } from '../controllers/contractController.js';
 import { protect } from '../middleware/auth.js';
 import { uploadContract as uploadMiddleware } from '../middleware/upload.js';
@@ -18,6 +19,7 @@ router.post('/upload', uploadMiddleware.single('file'), uploadContract);
 router.get('/', getContracts);
 router.get('/generated', getGeneratedContracts);
 router.post('/generate', generateContract);
+router.get('/:id/status', getAnalysisStatus);
 router.get('/:id', getContract);
 router.delete('/:id', deleteContract);
 

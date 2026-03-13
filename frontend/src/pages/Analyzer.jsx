@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { 
   Upload, FileText, AlertTriangle, AlertCircle, CheckCircle, 
@@ -7,57 +7,6 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import api from '../services/api'
-
-const mockAnalysis = {
-  risks: [
-    {
-      level: 'high',
-      title: 'Одностороннее изменение объема работ',
-      text: '«Заказчик вправе в одностороннем порядке изменить объем работ»',
-      article: 'Ст. 310 ГК РФ',
-      description: 'Изменение договора возможно только по соглашению сторон. Данная формулировка дает заказчику неограниченное право менять ТЗ.',
-      recommendation: 'Заменить на: «Изменения возможны только при согласовании сторон дополнительным соглашением с корректировкой стоимости и сроков»'
-    },
-    {
-      level: 'high',
-      title: 'Неограниченная ответственность исполнителя',
-      text: '«Исполнитель несет ответственность за все убытки Заказчика»',
-      article: 'Ст. 15, 393 ГК РФ',
-      description: 'Отсутствие ограничения ответственности может привести к требованиям о возмещении недополученной прибыли, косвенных убытков.',
-      recommendation: 'Добавить: «Ответственность Исполнителя ограничена размером оплаты по настоящему договору»'
-    },
-    {
-      level: 'medium',
-      title: 'Несоразмерная неустойка',
-      text: '«Неустойка 1% за каждый день просрочки»',
-      article: 'Ст. 333 ГК РФ',
-      description: '365% годовых значительно превышает ключевую ставку ЦБ. Суд снизит неустойку, но процесс займет время.',
-      recommendation: 'Установить 0,1% (36,5% годовых) или фиксированную сумму за день просрочки'
-    },
-    {
-      level: 'medium',
-      title: 'Передача ИС без поэтапной оплаты',
-      text: '«Исключительные права передаются после полной оплаты»',
-      article: 'Ст. 1234 ГК РФ',
-      description: 'Риск неполучения оплаты после передачи прав. При банкротстве заказчика права попадут в конкурсную массу.',
-      recommendation: 'Разбить оплату на этапы: 50% предоплата, 50% до передачи исходников'
-    },
-    {
-      level: 'low',
-      title: 'Отсутствие срока рассмотрения результата',
-      text: '«Заказчик обязуется рассмотреть результат работ»',
-      article: 'Ст. 720 ГК РФ',
-      description: 'Без конкретного срока заказчик может затягивать приемку работ бесконечно.',
-      recommendation: 'Добавить: «В течение 5 рабочих дней с момента получения. По истечении — работа считается принятой»'
-    }
-  ],
-  summary: {
-    highRisks: 2,
-    mediumRisks: 2,
-    lowRisks: 1,
-    totalScore: 35
-  }
-}
 
 const riskConfig = {
   high: { 
@@ -102,10 +51,25 @@ export default function Analyzer() {
   const [analysis, setAnalysis] = useState(null)
   const [expandedRisk, setExpandedRisk] = useState(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [currentContractId, setCurrentContractId] = useState(null)
+  const pollingRef = useRef(null)
+
+  const queryClient = useQueryClient()
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+      }
+    }
+  }, [])
 
   const onDrop = useCallback((acceptedFiles) => {
     if (acceptedFiles.length > 0) {
       setFile(acceptedFiles[0])
+      setAnalysis(null) // Clear previous analysis
+      setCurrentContractId(null)
       toast.success(`Файл ${acceptedFiles[0].name} загружен`)
     }
   }, [])
@@ -121,6 +85,37 @@ export default function Analyzer() {
     multiple: false
   })
 
+  // Poll for analysis status
+  const startPolling = (contractId) => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current)
+    }
+
+    pollingRef.current = setInterval(async () => {
+      try {
+        const response = await api.get(`/contracts/${contractId}/status`)
+        const { status, analysis: analysisData } = response.data
+
+        if (status === 'completed' && analysisData) {
+          setAnalysis(analysisData)
+          setIsAnalyzing(false)
+          clearInterval(pollingRef.current)
+          pollingRef.current = null
+          toast.success('Анализ завершен')
+          queryClient.invalidateQueries(['contracts'])
+        } else if (status === 'failed') {
+          setIsAnalyzing(false)
+          clearInterval(pollingRef.current)
+          pollingRef.current = null
+          toast.error('Анализ не удался')
+        }
+        // Continue polling if status is 'pending' or 'analyzing'
+      } catch (error) {
+        console.error('Polling error:', error)
+      }
+    }, 2000) // Poll every 2 seconds
+  }
+
   const handleAnalyze = async () => {
     if (!file) {
       toast.error('Пожалуйста, загрузите файл')
@@ -129,20 +124,124 @@ export default function Analyzer() {
 
     setIsAnalyzing(true)
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    setAnalysis(mockAnalysis)
-    setIsAnalyzing(false)
-    toast.success('Анализ завершен')
+    try {
+      // Create FormData
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('contractType', contractType)
+      formData.append('userRole', userRole)
+
+      // Upload and start analysis
+      const response = await api.post('/contracts/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      const { contract } = response.data
+      setCurrentContractId(contract.id)
+      
+      toast.success('Анализ начат...')
+      
+      // Start polling for results
+      startPolling(contract.id)
+      
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast.error(error.response?.data?.message || 'Ошибка загрузки файла')
+      setIsAnalyzing(false)
+    }
   }
 
   const loadDemo = () => {
     setContractType('podryad')
     setUserRole('executor')
     setFile({ name: 'dogovor-podryada-demo.pdf', size: 125000 })
-    setAnalysis(mockAnalysis)
+    
+    // Demo analysis data
+    setAnalysis({
+      risks: [
+        {
+          level: 'high',
+          title: 'Одностороннее изменение объема работ',
+          text: '«Заказчик вправе в одностороннем порядке изменить объем работ»',
+          article: 'Ст. 310 ГК РФ',
+          description: 'Изменение договора возможно только по соглашению сторон. Данная формулировка дает заказчику неограниченное право менять ТЗ.',
+          recommendation: 'Заменить на: «Изменения возможны только при согласовании сторон дополнительным соглашением с корректировкой стоимости и сроков»'
+        },
+        {
+          level: 'high',
+          title: 'Неограниченная ответственность исполнителя',
+          text: '«Исполнитель несет ответственность за все убытки Заказчика»',
+          article: 'Ст. 15, 393 ГК РФ',
+          description: 'Отсутствие ограничения ответственности может привести к требованиям о возмещении недополученной прибыли, косвенных убытков.',
+          recommendation: 'Добавить: «Ответственность Исполнителя ограничена размером оплаты по настоящему договору»'
+        },
+        {
+          level: 'medium',
+          title: 'Несоразмерная неустойка',
+          text: '«Неустойка 1% за каждый день просрочки»',
+          article: 'Ст. 333 ГК РФ',
+          description: '365% годовых значительно превышает ключевую ставку ЦБ. Суд снизит неустойку, но процесс займет время.',
+          recommendation: 'Установить 0,1% (36,5% годовых) или фиксированную сумму за день просрочки'
+        },
+        {
+          level: 'medium',
+          title: 'Передача ИС без поэтапной оплаты',
+          text: '«Исключительные права передаются после полной оплаты»',
+          article: 'Ст. 1234 ГК РФ',
+          description: 'Риск неполучения оплаты после передачи прав. При банкротстве заказчика права попадут в конкурсную массу.',
+          recommendation: 'Разбить оплату на этапы: 50% предоплата, 50% до передачи исходников'
+        },
+        {
+          level: 'low',
+          title: 'Отсутствие срока рассмотрения результата',
+          text: '«Заказчик обязуется рассмотреть результат работ»',
+          article: 'Ст. 720 ГК РФ',
+          description: 'Без конкретного срока заказчик может затягивать приемку работ бесконечно.',
+          recommendation: 'Добавить: «В течение 5 рабочих дней с момента получения. По истечении — работа считается принятой»'
+        }
+      ],
+      summary: {
+        highRisks: 2,
+        mediumRisks: 2,
+        lowRisks: 1,
+        totalScore: 35
+      },
+      recommendations: [
+        'Внесите правки в пункты 4.2 и 8.1',
+        'Снизьте неустойку до 0,1%',
+        'Добавьте срок рассмотрения результата'
+      ]
+    })
+    
     toast.success('Демо-данные загружены')
+  }
+
+  const downloadReport = () => {
+    if (!analysis) return
+    
+    const report = {
+      title: 'Анализ договора',
+      date: new Date().toLocaleDateString('ru-RU'),
+      contractType: contractTypes.find(t => t.value === contractType)?.label,
+      userRole: userRole === 'executor' ? 'Исполнитель' : 'Заказчик',
+      summary: analysis.summary,
+      risks: analysis.risks,
+      recommendations: analysis.recommendations
+    }
+    
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `contract-analysis-${Date.now()}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    toast.success('Отчет сохранен')
   }
 
   return (
@@ -182,7 +281,14 @@ export default function Analyzer() {
                   <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(1)} KB</p>
                 </div>
                 <button 
-                  onClick={() => setFile(null)}
+                  onClick={() => {
+                    setFile(null)
+                    setAnalysis(null)
+                    if (pollingRef.current) {
+                      clearInterval(pollingRef.current)
+                      pollingRef.current = null
+                    }
+                  }}
                   className="text-slate-400 hover:text-danger-500"
                 >
                   ×
@@ -264,10 +370,20 @@ export default function Analyzer() {
           {!analysis ? (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 flex flex-col items-center justify-center min-h-[400px] text-center">
               <FileText className="w-16 h-16 text-slate-300 mb-4" />
-              <h3 className="text-lg font-medium text-slate-700 mb-2">Загрузите договор для начала анализа</h3>
+              <h3 className="text-lg font-medium text-slate-700 mb-2">
+                {isAnalyzing ? 'Анализируем документ...' : 'Загрузите договор для начала анализа'}
+              </h3>
               <p className="text-slate-500 text-sm max-w-md">
-                Система проверит документ на риски, перекосы в пользу другой стороны и даст рекомендации по исправлению
+                {isAnalyzing 
+                  ? 'ИИ изучает документ и выявляет риски. Это займет 10-30 секунд.'
+                  : 'Система проверит документ на риски, перекосы в пользу другой стороны и даст рекомендации по исправлению'}
               </p>
+              {isAnalyzing && (
+                <div className="mt-6 flex items-center text-primary-600">
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  <span className="text-sm">Обработка...</span>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-6">
@@ -283,7 +399,11 @@ export default function Analyzer() {
                     }`}>
                       {analysis.summary.highRisks > 0 ? 'Высокий риск' : 'Требует внимания'}
                     </span>
-                    <button className="p-2 text-slate-400 hover:text-primary-600 hover:bg-slate-100 rounded-lg transition-colors">
+                    <button 
+                      onClick={downloadReport}
+                      className="p-2 text-slate-400 hover:text-primary-600 hover:bg-slate-100 rounded-lg transition-colors"
+                      title="Скачать отчет"
+                    >
                       <Download className="w-5 h-5" />
                     </button>
                   </div>
@@ -303,6 +423,20 @@ export default function Analyzer() {
                     <div className="text-xs text-slate-600 mt-1">Замечаний</div>
                   </div>
                 </div>
+
+                {analysis.recommendations && analysis.recommendations.length > 0 && (
+                  <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                    <h4 className="font-medium text-primary-900 mb-2">Общие рекомендации:</h4>
+                    <ul className="space-y-1">
+                      {analysis.recommendations.map((rec, idx) => (
+                        <li key={idx} className="text-sm text-primary-800 flex items-start">
+                          <CheckCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {/* Risks List */}
@@ -328,9 +462,11 @@ export default function Analyzer() {
                             <h4 className="font-bold text-slate-900">{risk.title}</h4>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded">
-                              {risk.article}
-                            </span>
+                            {risk.article && (
+                              <span className="text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded">
+                                {risk.article}
+                              </span>
+                            )}
                             {isExpanded ? (
                               <ChevronUp className="w-5 h-5 text-slate-400" />
                             ) : (
@@ -339,54 +475,39 @@ export default function Analyzer() {
                           </div>
                         </div>
                         
-                        {!isExpanded && (
+                        {!isExpanded && risk.text && (
                           <p className="mt-2 text-sm text-slate-600 line-clamp-1">{risk.text}</p>
                         )}
                       </div>
 
                       {isExpanded && (
                         <div className="px-5 pb-5">
-                          <div className="bg-slate-50 p-3 rounded border-l-4 border-slate-400 mb-3">
-                            <p className="text-sm text-slate-700 italic">"{risk.text}"</p>
-                          </div>
+                          {risk.text && (
+                            <div className="bg-slate-50 p-3 rounded border-l-4 border-slate-400 mb-3">
+                              <p className="text-sm text-slate-700 italic">"{risk.text}"</p>
+                            </div>
+                          )}
                           
-                          <p className="text-sm text-slate-600 mb-3">{risk.description}</p>
+                          {risk.description && (
+                            <p className="text-sm text-slate-600 mb-3">{risk.description}</p>
+                          )}
                           
-                          <div className="bg-success-50 border border-success-200 rounded-lg p-3">
-                            <div className="flex items-start">
-                              <CheckCircle className="w-4 h-4 text-success-500 mt-1 mr-2 flex-shrink-0" />
-                              <div>
-                                <span className="text-xs font-semibold text-slate-700 block mb-1">Рекомендация:</span>
-                                <p className="text-sm text-slate-700">{risk.recommendation}</p>
+                          {risk.recommendation && (
+                            <div className="bg-success-50 border border-success-200 rounded-lg p-3">
+                              <div className="flex items-start">
+                                <CheckCircle className="w-4 h-4 text-success-500 mt-1 mr-2 flex-shrink-0" />
+                                <div>
+                                  <span className="text-xs font-semibold text-slate-700 block mb-1">Рекомендация:</span>
+                                  <p className="text-sm text-slate-700">{risk.recommendation}</p>
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       )}
                     </div>
                   )
                 })}
-              </div>
-
-              {/* Document Preview */}
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <h3 className="font-bold text-lg mb-4">Разметка документа</h3>
-                <div className="bg-slate-50 p-6 rounded-lg text-sm leading-relaxed font-serif text-slate-700 space-y-3">
-                  <p><strong>ДОГОВОР ПОДРЯДА № 45/2024</strong></p>
-                  <p className="text-danger-600 bg-danger-50 px-2 py-1 rounded">
-                    <strong>4.2.</strong> <span className="underline decoration-danger-500 decoration-2">Заказчик вправе в одностороннем порядке изменить объем работ</span>
-                    <AlertTriangle className="w-4 h-4 inline ml-2 text-danger-500" />
-                  </p>
-                  <p>4.3. Срок выполнения работ — 30 календарных дней с момента внесения предоплаты.</p>
-                  <p className="text-warning-600 bg-warning-50 px-2 py-1 rounded">
-                    <strong>6.1.</strong> <span className="underline decoration-warning-500 decoration-2">При нарушении сроков исполнитель уплачивает неустойку в размере 1% от цены договора за каждый день просрочки.</span>
-                    <AlertCircle className="w-4 h-4 inline ml-2 text-warning-500" />
-                  </p>
-                  <p className="text-danger-600 bg-danger-50 px-2 py-1 rounded">
-                    <strong>8.1.</strong> <span className="underline decoration-danger-500 decoration-2">Исполнитель несет ответственность за все убытки Заказчика, включая упущенную выгоду.</span>
-                    <AlertTriangle className="w-4 h-4 inline ml-2 text-danger-500" />
-                  </p>
-                </div>
               </div>
             </div>
           )}

@@ -2,6 +2,8 @@ import Contract from '../models/Contract.js';
 import GeneratedContract from '../models/GeneratedContract.js';
 import { asyncHandler } from '../middleware/error.js';
 import { generateContractDocument } from '../services/contractGenerator.js';
+import { extractText } from '../services/documentParser.js';
+import { analyzeContractWithAI, getMockAnalysis } from '../services/aiAnalysis.js';
 import path from 'path';
 
 // Upload and analyze contract
@@ -31,7 +33,7 @@ export const uploadContract = asyncHandler(async (req, res) => {
   req.user.subscription.analysisCount += 1;
   await req.user.save();
 
-  // Trigger async analysis (in production, use a job queue)
+  // Trigger async analysis
   analyzeContractAsync(contract._id);
 
   res.status(201).json({
@@ -137,7 +139,7 @@ export const getGeneratedContracts = asyncHandler(async (req, res) => {
   });
 });
 
-// Async analysis function (mock implementation)
+// Async analysis function with real AI
 async function analyzeContractAsync(contractId) {
   try {
     const contract = await Contract.findById(contractId);
@@ -146,58 +148,86 @@ async function analyzeContractAsync(contractId) {
     contract.status = 'analyzing';
     await contract.save();
 
-    // Simulate analysis delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    let analysis;
+    let extractedText = '';
 
-    // Mock analysis results
-    const mockRisks = [
-      {
-        level: 'high',
-        title: 'Одностороннее изменение объема работ',
-        text: '«Заказчик вправе в одностороннем порядке изменить объем работ»',
-        article: 'Ст. 310 ГК РФ',
-        description: 'Изменение договора возможно только по соглашению сторон.',
-        recommendation: 'Заменить на: «Изменения возможны только при согласовании сторон»'
-      },
-      {
-        level: 'high',
-        title: 'Неограниченная ответственность',
-        text: '«Исполнитель несет ответственность за все убытки»',
-        article: 'Ст. 15, 393 ГК РФ',
-        description: 'Отсутствие ограничения ответственности.',
-        recommendation: 'Добавить ограничение размером договора'
-      },
-      {
-        level: 'medium',
-        title: 'Несоразмерная неустойка',
-        text: '«Неустойка 1% за каждый день просрочки»',
-        article: 'Ст. 333 ГК РФ',
-        description: '365% годовых значительно превышает ключевую ставку ЦБ.',
-        recommendation: 'Установить 0,1% в день'
+    try {
+      // Step 1: Extract text from document
+      console.log(`Extracting text from ${contract.fileType} file...`);
+      const extracted = await extractText(contract.filePath, contract.fileType);
+      extractedText = extracted.text;
+      
+      contract.content = {
+        text: extractedText.slice(0, 50000), // Store first 50k chars
+        pages: extracted.pages
+      };
+      await contract.save();
+
+      // Step 2: Analyze with AI if API key is available
+      if (process.env.OPENAI_API_KEY) {
+        console.log('Analyzing with OpenAI...');
+        analysis = await analyzeContractWithAI(
+          extractedText,
+          contract.contractType,
+          contract.userRole
+        );
+      } else {
+        console.log('No OpenAI API key, using mock analysis');
+        analysis = getMockAnalysis(contract.contractType, contract.userRole);
       }
-    ];
+    } catch (error) {
+      console.error('Analysis error:', error);
+      // Fallback to mock analysis on error
+      analysis = getMockAnalysis(contract.contractType, contract.userRole);
+      analysis.risks.unshift({
+        level: 'low',
+        title: 'Примечание: использована демо-аналитика',
+        text: '',
+        article: '',
+        description: `Не удалось выполнить полный анализ: ${error.message}. Показаны типовые риски для данного типа договора.`,
+        recommendation: 'Для полного анализа проверьте настройки API или попробуйте загрузить файл в другом формате (PDF или DOCX).'
+      });
+    }
 
+    // Save analysis results
     contract.analysis = {
-      risks: mockRisks,
-      summary: {
-        highRisks: mockRisks.filter(r => r.level === 'high').length,
-        mediumRisks: mockRisks.filter(r => r.level === 'medium').length,
-        lowRisks: 0,
-        totalScore: 35
-      },
-      recommendations: [
-        'Внесите правки в пункты 4.2 и 8.1',
-        'Снизьте неустойку до 0,1%',
-        'Добавьте срок рассмотрения результата'
-      ],
+      risks: analysis.risks,
+      summary: analysis.summary,
+      recommendations: analysis.recommendations,
       analyzedAt: new Date()
     };
-
     contract.status = 'completed';
     await contract.save();
 
+    console.log(`Analysis completed for contract ${contractId}`);
+
   } catch (error) {
-    console.error('Analysis error:', error);
-    await Contract.findByIdAndUpdate(contractId, { status: 'failed' });
+    console.error('Fatal analysis error:', error);
+    await Contract.findByIdAndUpdate(contractId, { 
+      status: 'failed',
+      'analysis.recommendations': [`Ошибка анализа: ${error.message}`]
+    });
   }
 }
+
+// Get analysis status (for polling)
+export const getAnalysisStatus = asyncHandler(async (req, res) => {
+  const contract = await Contract.findOne({
+    _id: req.params.id,
+    user: req.user.id
+  }).select('status analysis analyzedAt');
+
+  if (!contract) {
+    return res.status(404).json({
+      success: false,
+      message: 'Contract not found'
+    });
+  }
+
+  res.json({
+    success: true,
+    status: contract.status,
+    analysis: contract.analysis,
+    analyzedAt: contract.analyzedAt
+  });
+});

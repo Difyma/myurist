@@ -199,32 +199,253 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-slate-50">
+      <section className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">Все инструменты для защиты бизнеса</h2>
-            <p className="text-lg text-slate-600">От проверки договора до подготовки иска. Полный цикл правовой защиты.</p>
+          <div className="text-center max-w-3xl mx-auto mb-20">
+            <span className="inline-flex items-center px-4 py-2 rounded-full bg-primary-100 text-primary-700 font-medium text-sm mb-6">
+              Наши возможности
+            </span>
+            <h2 className="text-4xl font-bold text-slate-900 mb-6">Все инструменты для защиты бизнеса</h2>
+            <p className="text-xl text-slate-600">От проверки договора до подготовки иска. Полный цикл правовой защиты.</p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature) => (
-              <div
-                key={feature.path}
-                onClick={() => navigate(feature.path)}
-                className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 card-hover cursor-pointer group"
-              >
-                <div className={`w-12 h-12 ${
-                  feature.color === 'blue' ? 'bg-primary-100 text-primary-600' :
-                  feature.color === 'green' ? 'bg-success-100 text-success-600' :
-                  feature.color === 'amber' ? 'bg-warning-100 text-warning-600' :
-                  'bg-danger-100 text-danger-600'
-                } rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <feature.icon className="w-6 h-6" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">{feature.title}</h3>
-                <p className="text-sm text-slate-600">{feature.description}</p>
+          {/* Feature 1: Анализ договоров */}
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
+            <div className="order-2 lg:order-1">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-2xl mb-6">
+                <Shield className="w-8 h-8 text-primary-600" />
               </div>
-            ))}
+              <h3 className="text-3xl font-bold text-slate-900 mb-4">Анализ договоров</h3>
+              <p className="text-lg text-slate-600 mb-6">
+                Загрузите PDF или Word. AI найдет риски, перекосы и опасные формулировки. 
+                Проверка на соответствие ГК РФ.
+              </p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  Проверка 8 типов рисков
+                </li>
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  Цветовая разметка опасных пунктов
+                </li>
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  Ссылки на статьи ГК РФ
+                </li>
+              </ul>
+              <button 
+                onClick={() => navigate('/analyzer')}
+                className="btn-primary flex items-center"
+              >
+                Проверить договор
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </button>
+            </div>
+            <div className="order-1 lg:order-2">
+              <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-semibold text-slate-800">Результат анализа</span>
+                  <span className="px-3 py-1 rounded-full bg-danger-100 text-danger-700 text-sm font-medium">
+                    3 критических риска
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  <div className="bg-danger-50 border-l-4 border-danger-500 p-4 rounded-r-lg">
+                    <p className="text-sm font-medium text-danger-800 mb-1">Одностороннее изменение ТЗ</p>
+                    <p className="text-xs text-slate-600">Пункт 4.2 • Ст. 310 ГК РФ</p>
+                  </div>
+                  <div className="bg-danger-50 border-l-4 border-danger-500 p-4 rounded-r-lg">
+                    <p className="text-sm font-medium text-danger-800 mb-1">Неограниченная ответственность</p>
+                    <p className="text-xs text-slate-600">Пункт 8.1 • Ст. 393 ГК РФ</p>
+                  </div>
+                  <div className="bg-warning-50 border-l-4 border-warning-500 p-4 rounded-r-lg">
+                    <p className="text-sm font-medium text-warning-800 mb-1">Несоразмерная неустойка</p>
+                    <p className="text-xs text-slate-600">Пункт 6.1 • Ст. 333 ГК РФ</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 2: Конструктор */}
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
+            <div>
+              <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-semibold text-slate-800">Новый договор</span>
+                  <span className="text-xs text-slate-500">Шаг 3 из 6</span>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Ваша роль</label>
+                    <div className="flex gap-2">
+                      <button className="flex-1 py-2 px-4 bg-primary-50 border-2 border-primary-500 text-primary-700 rounded-lg text-sm font-medium">
+                        Исполнитель
+                      </button>
+                      <button className="flex-1 py-2 px-4 border border-slate-300 text-slate-600 rounded-lg text-sm">
+                        Заказчик
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Размер предоплаты</label>
+                    <div className="flex items-center gap-4">
+                      <input type="range" className="flex-1" defaultValue="50" />
+                      <span className="text-sm font-medium text-slate-700 w-12">50%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-2">
+                    <CheckCircle className="w-4 h-4 text-success-500" />
+                    <span className="text-sm text-slate-600">Автоматический расчет неустойки</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-success-100 rounded-2xl mb-6">
+                <FileSignature className="w-8 h-8 text-success-600" />
+              </div>
+              <h3 className="text-3xl font-bold text-slate-900 mb-4">Конструктор договоров</h3>
+              <p className="text-lg text-slate-600 mb-6">
+                Ответьте на 6 простых вопросов. Получите сбалансированный договор 
+                с учетом вашей роли — исполнитель или заказчик.
+              </p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  6 шагов визарда
+                </li>
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  Шаблоны для разных типов работ
+                </li>
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  Баланс интересов обеих сторон
+                </li>
+              </ul>
+              <button 
+                onClick={() => navigate('/constructor')}
+                className="btn-secondary flex items-center"
+              >
+                Создать договор
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </button>
+            </div>
+          </div>
+
+          {/* Feature 3: Проверка переписки */}
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
+            <div className="order-2 lg:order-1">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-warning-100 rounded-2xl mb-6">
+                <MessagesSquare className="w-8 h-8 text-warning-600" />
+              </div>
+              <h3 className="text-3xl font-bold text-slate-900 mb-4">Анализ переписки</h3>
+              <p className="text-lg text-slate-600 mb-6">
+                Проверьте Telegram, WhatsApp, Email. Найдите юридически значимые моменты, 
+                согласованные условия и изменения ТЗ.
+              </p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  Импорт из мессенджеров
+                </li>
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  Выявление изменения объема работ
+                </li>
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  Доказательства для суда
+                </li>
+              </ul>
+              <button 
+                onClick={() => navigate('/chat')}
+                className="btn-primary flex items-center"
+              >
+                Проверить переписку
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </button>
+            </div>
+            <div className="order-1 lg:order-2">
+              <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-slate-200 rounded-full" />
+                  <div>
+                    <p className="font-medium text-slate-800">Заказчик</p>
+                    <p className="text-xs text-slate-500">Telegram • 10:42</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="bg-slate-100 p-3 rounded-lg rounded-tl-none max-w-[85%]">
+                    <p className="text-sm text-slate-700">Можете еще и логотип сделать? Это ведь входит в работу?</p>
+                  </div>
+                  <div className="bg-primary-50 p-3 rounded-lg rounded-tr-none ml-auto max-w-[85%]">
+                    <p className="text-sm text-slate-700">Договорились, логотип бонусом</p>
+                  </div>
+                  <div className="bg-warning-50 border border-warning-200 p-3 rounded-lg">
+                    <p className="text-xs font-medium text-warning-800 mb-1">⚠️ Юридически значимый момент</p>
+                    <p className="text-xs text-warning-700">Дополнительная работа без уточнения стоимости</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 4: Оценка рисков */}
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
+                <h4 className="font-semibold text-slate-800 mb-4">Калькулятор финансовых рисков</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-slate-600 mb-1">Сумма договора</label>
+                    <p className="text-xl font-bold text-slate-900">150 000 ₽</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-600 mb-1">Неустойка за день</label>
+                    <p className="text-xl font-bold text-danger-600">1% (1 500 ₽)</p>
+                  </div>
+                  <div className="bg-danger-50 p-4 rounded-lg border border-danger-200">
+                    <p className="text-sm font-medium text-danger-800 mb-1">⚠️ Высокий риск!</p>
+                    <p className="text-xs text-danger-700">365% годовых. Суд снизит по ст. 333 ГК РФ.</p>
+                    <p className="text-xs text-slate-600 mt-2">Рекомендуем: 0.1% (150 ₽/день)</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-danger-100 rounded-2xl mb-6">
+                <Calculator className="w-8 h-8 text-danger-600" />
+              </div>
+              <h3 className="text-3xl font-bold text-slate-900 mb-4">Оценка финансовых рисков</h3>
+              <p className="text-lg text-slate-600 mb-6">
+                Рассчитайте максимальную ответственность. Проверьте неустойку на 
+                соразмерность по ст. 333 ГК РФ.
+              </p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  Расчет максимальной ответственности
+                </li>
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  Проверка соразмерности неустойки
+                </li>
+                <li className="flex items-center text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-success-500 mr-3" />
+                  Анализ годовой ставки
+                </li>
+              </ul>
+              <button 
+                onClick={() => navigate('/risks')}
+                className="btn-primary flex items-center"
+              >
+                Рассчитать риски
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </button>
+            </div>
           </div>
         </div>
       </section>

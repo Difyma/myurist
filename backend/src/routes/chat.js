@@ -1,6 +1,6 @@
 import express from 'express';
 import { analyzeChat, getChatAnalysis, getChatAnalyses, demoAnalysis } from '../controllers/chatController.js';
-import { protect } from '../middleware/auth.js';
+import { protect } from '../middleware/supabaseAuth.js';
 
 const router = express.Router();
 

@@ -9,7 +9,7 @@ import {
   getAnalysisStatus,
   downloadAnalysisReport
 } from '../controllers/contractController.js';
-import { protect } from '../middleware/auth.js';
+import { protect } from '../middleware/supabaseAuth.js';
 import { uploadContract as uploadMiddleware } from '../middleware/upload.js';
 
 const router = express.Router();

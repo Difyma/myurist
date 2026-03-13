@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { asyncHandler } from '../middleware/error.js';
+import { createAndSendOTP, verifyOTP } from '../services/otpService.js';
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -131,6 +132,95 @@ export const demoLogin = asyncHandler(async (req, res) => {
     
     user = await User.create({
       email: userEmail,
+      password: 'demo123456',
+      firstName,
+      lastName,
+      subscription: {
+        type: 'professional',
+        analysisCount: 0,
+        maxAnalysis: 10
+      }
+    });
+  }
+
+  user.lastLogin = new Date();
+  await user.save();
+
+  const token = generateToken(user._id);
+
+  res.json({
+    success: true,
+    token,
+    user: {
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      subscription: user.subscription
+    }
+  });
+});
+
+// Request OTP code
+export const requestOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Пожалуйста, введите корректный email'
+    });
+  }
+
+  const result = await createAndSendOTP(email);
+
+  if (!result.success) {
+    return res.status(500).json({
+      success: false,
+      message: 'Ошибка при отправке кода. Попробуйте позже.'
+    });
+  }
+
+  res.json({
+    success: true,
+    message: 'Код подтверждения отправлен на ваш email'
+  });
+});
+
+// Verify OTP and login
+export const verifyOTPAndLogin = asyncHandler(async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    return res.status(400).json({
+      success: false,
+      message: 'Пожалуйста, введите email и код подтверждения'
+    });
+  }
+
+  // Verify OTP code
+  const verification = await verifyOTP(email, code);
+
+  if (!verification.success) {
+    return res.status(401).json({
+      success: false,
+      message: verification.error || 'Неверный код подтверждения'
+    });
+  }
+
+  // Find or create user
+  let user = await User.findOne({ email });
+  
+  if (!user) {
+    // Extract name from email (e.g., john.doe@example.com -> John Doe)
+    const emailPrefix = email.split('@')[0];
+    const nameParts = emailPrefix.split(/[._-]/).filter(Boolean);
+    const firstName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : 'Демо';
+    const lastName = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1) : 'Пользователь';
+    
+    user = await User.create({
+      email,
       password: 'demo123456',
       firstName,
       lastName,

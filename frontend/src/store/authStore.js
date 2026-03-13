@@ -74,6 +74,42 @@ export const useAuthStore = create(
         }
       },
 
+      requestOTP: async (email) => {
+        set({ isLoading: true, error: null })
+        try {
+          const { data } = await api.post('/auth/otp/request', { email })
+          set({ isLoading: false })
+          return { success: true, message: data.message }
+        } catch (error) {
+          set({
+            error: error.response?.data?.message || 'Failed to send OTP',
+            isLoading: false,
+          })
+          return { success: false, error: error.response?.data?.message }
+        }
+      },
+
+      verifyOTP: async (email, code) => {
+        set({ isLoading: true, error: null })
+        try {
+          const { data } = await api.post('/auth/otp/verify', { email, code })
+          set({
+            user: data.user,
+            token: data.token,
+            isAuthenticated: true,
+            isLoading: false,
+          })
+          api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
+          return { success: true }
+        } catch (error) {
+          set({
+            error: error.response?.data?.message || 'Invalid verification code',
+            isLoading: false,
+          })
+          return { success: false, error: error.response?.data?.message }
+        }
+      },
+
       logout: () => {
         set({
           user: null,
